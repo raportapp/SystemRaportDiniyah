@@ -505,15 +505,30 @@ export default function App() {
       return;
     }
 
-    // 2. Validate NIS uniqueness per school year (tahunAjaran)
+    // 2. Validate NIS uniqueness per semester and school year (tahunAjaran)
     const normalizedNis = studentData.nis.trim().toLowerCase();
     const duplicateNisStudent = students.find(s => 
       s.id !== studentData.id &&
       s.nis.trim().toLowerCase() === normalizedNis &&
+      s.semester === studentData.semester &&
       s.tahunAjaran === studentData.tahunAjaran
     );
     if (duplicateNisStudent) {
-      alert(`Gagal menyimpan: NIS "${studentData.nis}" sudah terdaftar untuk santri lain (${duplicateNisStudent.nama}) pada Tahun Ajaran ${studentData.tahunAjaran}!`);
+      alert(`Gagal menyimpan: NIS "${studentData.nis}" sudah terdaftar untuk santri lain (${duplicateNisStudent.nama}) pada Semester ${studentData.semester} Tahun Ajaran ${studentData.tahunAjaran}!`);
+      return;
+    }
+
+    // Validate Name + Class uniqueness per semester and school year to prevent duplicate entries
+    const normalizedName = studentData.nama.trim().toLowerCase();
+    const duplicateNameStudent = students.find(s =>
+      s.id !== studentData.id &&
+      s.nama.trim().toLowerCase() === normalizedName &&
+      s.kelas === studentData.kelas &&
+      s.semester === studentData.semester &&
+      s.tahunAjaran === studentData.tahunAjaran
+    );
+    if (duplicateNameStudent) {
+      alert(`Gagal menyimpan: Santri bernama "${studentData.nama}" sudah terdaftar di Kelas "${studentData.kelas}" pada Semester ${studentData.semester} Tahun Ajaran ${studentData.tahunAjaran}!`);
       return;
     }
 
@@ -543,7 +558,7 @@ export default function App() {
       addSystemLog("Ubah Santri", `Memperbarui data dan nilai santri: ${studentData.nama} (NIS: ${studentData.nis})`);
     } else {
       // Add mode
-      const newId = `stud-${Date.now()}`;
+      const newId = `stud-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
       updatedStudent = {
         ...studentData,
         id: newId,
@@ -581,14 +596,28 @@ export default function App() {
         return;
       }
 
-      // NIS Uniqueness per school year (tahunAjaran) check in the list
+      // NIS Uniqueness per semester and school year (tahunAjaran) check in the list
       const duplicateInList = updatedStudentsList.some(other => 
         other.id !== st.id && 
         other.nis.trim().toLowerCase() === st.nis.trim().toLowerCase() && 
+        other.semester === st.semester &&
         other.tahunAjaran === st.tahunAjaran
       );
       if (duplicateInList) {
-        alert(`Gagal Impor: Ditemukan NIS ganda "${st.nis}" pada Tahun Ajaran ${st.tahunAjaran} di dalam file impor Anda!`);
+        alert(`Gagal Menyimpan: Ditemukan NIS ganda "${st.nis}" pada Semester ${st.semester} Tahun Ajaran ${st.tahunAjaran} di dalam data!`);
+        return;
+      }
+
+      // Name + Class uniqueness per semester and school year check in the list
+      const duplicateNameInList = updatedStudentsList.some(other =>
+        other.id !== st.id &&
+        other.nama.trim().toLowerCase() === st.nama.trim().toLowerCase() &&
+        other.kelas === st.kelas &&
+        other.semester === st.semester &&
+        other.tahunAjaran === st.tahunAjaran
+      );
+      if (duplicateNameInList) {
+        alert(`Gagal Menyimpan: Ditemukan Nama ganda "${st.nama}" di Kelas "${st.kelas}" pada Semester ${st.semester} Tahun Ajaran ${st.tahunAjaran} di dalam data!`);
         return;
       }
 

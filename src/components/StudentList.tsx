@@ -44,6 +44,7 @@ export default function StudentList({
 }: StudentListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState<'nama-asc' | 'nama-desc' | 'nis-asc' | 'nis-desc'>('nama-asc');
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Record<string, boolean>>({});
@@ -160,6 +161,29 @@ export default function StudentList({
     return matchesSearch && matchesClass;
   });
 
+  // Sort filtered students based on Name or NIS
+  const sortedFilteredStudents = [...filteredStudents].sort((a, b) => {
+    if (sortBy === 'nama-asc') {
+      return a.nama.localeCompare(b.nama, 'id');
+    }
+    if (sortBy === 'nama-desc') {
+      return b.nama.localeCompare(a.nama, 'id');
+    }
+    if (sortBy === 'nis-asc') {
+      const nisA = parseInt(a.nis) || 0;
+      const nisB = parseInt(b.nis) || 0;
+      if (nisA !== nisB) return nisA - nisB;
+      return a.nis.localeCompare(b.nis);
+    }
+    if (sortBy === 'nis-desc') {
+      const nisA = parseInt(a.nis) || 0;
+      const nisB = parseInt(b.nis) || 0;
+      if (nisA !== nisB) return nisB - nisA;
+      return b.nis.localeCompare(a.nis);
+    }
+    return 0;
+  });
+
   // Export to CSV function
   const handleExportCSV = () => {
     // 1. Prepare base headers
@@ -171,7 +195,7 @@ export default function StudentList({
     const headers = [...baseHeaders, ...subjectHeaders];
 
     // 2. Prepare rows
-    const rows = filteredStudents.map(st => {
+    const rows = sortedFilteredStudents.map(st => {
       const baseData = [
         st.nis,
         st.nama,
@@ -219,7 +243,7 @@ export default function StudentList({
   const handleExportExcel = () => {
     const sortedSubjects = [...subjects].sort((a, b) => a.id - b.id);
     
-    const rows = filteredStudents.map(st => {
+    const rows = sortedFilteredStudents.map(st => {
       const rowObj: any = {
         'NIS': st.nis,
         'Nama Lengkap': st.nama,
@@ -420,8 +444,12 @@ export default function StudentList({
             }
           });
 
-          // Match student
-          const existingIdx = updatedList.findIndex(s => s.nis === nis);
+          // Match student within the same semester and school year to prevent overwriting other terms
+          const existingIdx = updatedList.findIndex(s => 
+            s.nis.trim().toLowerCase() === nis.toLowerCase() &&
+            s.semester === semester &&
+            s.tahunAjaran === tahunAjaran
+          );
           if (existingIdx !== -1) {
             const existingStudent = updatedList[existingIdx];
             const updatedStudent: Student = {
@@ -570,7 +598,7 @@ export default function StudentList({
 
   // Group students by class
   const groupedStudents: Record<string, Student[]> = {};
-  filteredStudents.forEach(st => {
+  sortedFilteredStudents.forEach(st => {
     if (!groupedStudents[st.kelas]) {
       groupedStudents[st.kelas] = [];
     }
@@ -1123,18 +1151,34 @@ export default function StudentList({
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400 hidden sm:inline">Kelas:</span>
-          <select
-            value={selectedClassFilter}
-            onChange={(e) => setSelectedClassFilter(e.target.value)}
-            className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="ALL">Semua Kelas</option>
-            {allClasses.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400 hidden sm:inline">Kelas:</span>
+            <select
+              value={selectedClassFilter}
+              onChange={(e) => setSelectedClassFilter(e.target.value)}
+              className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="ALL">Semua Kelas</option>
+              {allClasses.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400 hidden sm:inline">Urutan:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="nama-asc">Nama (A - Z)</option>
+              <option value="nama-desc">Nama (Z - A)</option>
+              <option value="nis-asc">NIS (Terkecil - Terbesar)</option>
+              <option value="nis-desc">NIS (Terbesar - Terkecil)</option>
+            </select>
+          </div>
         </div>
       </div>
 
