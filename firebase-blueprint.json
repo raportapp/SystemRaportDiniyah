@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student details and grades",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "nis": { "type": "string" },
+        "kelas": { "type": "string" },
+        "alamat": { "type": "string" },
+        "scores": { "type": "object" },
+        "catatan": { "type": "string" },
+        "hadir": { "type": "number" },
+        "sakit": { "type": "number" },
+        "izin": { "type": "number" },
+        "alfa": { "type": "number" }
+      },
+      "required": ["id", "nama", "nis", "kelas"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Educational subjects",
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "nameId": { "type": "string" },
+        "nameAr": { "type": "string" },
+        "kategori": { "type": "string" }
+      },
+      "required": ["id", "nameId", "nameAr", "kategori"]
+    },
+    "ClassSubject": {
+      "title": "ClassSubject",
+      "description": "Mapping between classes and subjects",
+      "type": "object",
+      "properties": {
+        "kelas": { "type": "string" },
+        "subjectId": { "type": "integer" }
+      },
+      "required": ["kelas", "subjectId"]
+    },
+    "ClassTeacher": {
+      "title": "ClassTeacher",
+      "description": "Mapping of class teachers",
+      "type": "object",
+      "properties": {
+        "kelas": { "type": "string" },
+        "waliKelas": { "type": "string" }
+      },
+      "required": ["kelas", "waliKelas"]
+    },
+    "SystemSettings": {
+      "title": "SystemSettings",
+      "description": "System-wide settings",
+      "type": "object",
+      "properties": {
+        "namaPesantren": { "type": "string" },
+        "namaMadrasah": { "type": "string" },
+        "alamat": { "type": "string" },
+        "tahunAjaran": { "type": "string" },
+        "semester": { "type": "string" },
+        "namaKepala": { "type": "string" },
+        "namaPengasuh": { "type": "string" },
+        "titimasaRaport": { "type": "string" },
+        "logoBase64": { "type": "string" },
+        "ttdKepalaBase64": { "type": "string" },
+        "ttdPengasuhBase64": { "type": "string" }
+      }
+    },
+    "SystemLog": {
+      "title": "SystemLog",
+      "description": "System activity logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "user": { "type": "string" }
+      }
+    },
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "User account for teacher or admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "fullname": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "students/{studentId}": {
+      "schema": "Student",
+      "description": "Collection of students data"
+    },
+    "subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Collection of subjects"
+    },
+    "class_subjects/{mappingId}": {
+      "schema": "ClassSubject",
+      "description": "Collection of class-subject associations"
+    },
+    "teachers/{classId}": {
+      "schema": "ClassTeacher",
+      "description": "Collection of class teachers"
+    },
+    "settings/{settingId}": {
+      "schema": "SystemSettings",
+      "description": "System settings collection"
+    },
+    "logs/{logId}": {
+      "schema": "SystemLog",
+      "description": "Logs of actions performed"
+    },
+    "users/{userId}": {
+      "schema": "UserAccount",
+      "description": "Teacher/Admin accounts"
+    }
+  }
+}

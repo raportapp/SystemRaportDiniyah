@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Sistem Raport Diniyah",
+  "description": "Aplikasi manajemen data nilai, kehadiran, dan cetak raport Madrasah Diniyah PPTQ Al-Husna Bukit Raja Wali.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
