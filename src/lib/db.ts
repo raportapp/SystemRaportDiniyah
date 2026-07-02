@@ -120,6 +120,18 @@ const rawDbService = {
     }
   },
 
+  async deleteStudentsBatch(ids: string[]): Promise<void> {
+    try {
+      const promises = ids.map(async (id) => {
+        const docRef = doc(db, STUDENTS_COLL, id);
+        await deleteDoc(docRef);
+      });
+      await Promise.all(promises);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, STUDENTS_COLL);
+    }
+  },
+
   // --- SUBJECTS ---
   async getSubjects(): Promise<Subject[]> {
     try {

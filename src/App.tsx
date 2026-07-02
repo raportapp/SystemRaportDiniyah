@@ -644,8 +644,14 @@ export default function App() {
       const updated = students.filter(s => s.id !== id);
       setStudents(updated);
       localStorage.setItem('raport_students', JSON.stringify(updated));
-      dbService.deleteStudent(id).catch(err => console.error("Error deleting student from cloud:", err));
-      addSystemLog("Hapus Santri", `Menghapus santri: ${student.nama} (NIS: ${student.nis})`);
+      dbService.deleteStudent(id)
+        .then(() => {
+          addSystemLog("Hapus Santri", `Menghapus santri: ${student.nama} (NIS: ${student.nis})`);
+        })
+        .catch(err => {
+          console.error("Error deleting student from cloud:", err);
+          alert("Gagal menghapus data dari cloud. Silakan coba lagi.");
+        });
     }
   };
 
@@ -688,9 +694,7 @@ export default function App() {
       localStorage.setItem('raport_students', JSON.stringify(updated));
 
       try {
-        for (const id of studentIdsToDelete) {
-          dbService.deleteStudent(id).catch(err => console.error("Error deleting class student from cloud:", err));
-        }
+        await dbService.deleteStudentsBatch(studentIdsToDelete);
         addSystemLog("Hapus Massal Kelas", `Menghapus massal ${classStudents.length} santri di Kelas: ${kelas} (${settings.semester} - ${settings.tahunAjaran})`);
         alert(`Alhamdulillah, berhasil menghapus massal ${classStudents.length} data santri di kelas ${kelas}!`);
       } catch (err: any) {

@@ -259,19 +259,19 @@ export default function StudentList({
   // Export to Excel function
   const handleExportExcel = () => {
     const sortedSubjects = [...subjects]
-      .filter(subj => subj && subj.nameId && subj.nameId.trim() !== '' && subj.nameId !== 'undefined')
+      .filter(subj => subj && typeof subj.nameId === 'string' && subj.nameId.trim() !== '' && subj.nameId !== 'undefined' && subj.nameId.toLowerCase() !== 'nan')
       .sort((a, b) => a.id - b.id);
     
     const rows = sortedFilteredStudents.map(st => {
       const rowObj: any = {
-        'NIS': st.nis,
-        'Nama Lengkap': st.nama,
-        'Kelas': st.kelas,
-        'Semester': st.semester,
-        'Tahun Ajaran': st.tahunAjaran,
-        'Sakit': st.sakit,
-        'Izin': st.izin,
-        'Alpa': st.alpa,
+        'NIS': st.nis || '',
+        'Nama Lengkap': st.nama || '',
+        'Kelas': st.kelas || '',
+        'Semester': st.semester || '',
+        'Tahun Ajaran': st.tahunAjaran || '',
+        'Sakit': typeof st.sakit === 'number' ? st.sakit : 0,
+        'Izin': typeof st.izin === 'number' ? st.izin : 0,
+        'Alpa': typeof st.alpa === 'number' ? st.alpa : 0,
         'Catatan': st.catatan || '',
         'Akhlaq': st.akhlaq || '',
         'Kerajinan': st.kerajinan || '',
@@ -331,7 +331,7 @@ export default function StudentList({
   // Download empty/blank Excel template with current subjects
   const handleDownloadTemplate = () => {
     const sortedSubjects = [...subjects]
-      .filter(subj => subj && subj.nameId && subj.nameId.trim() !== '' && subj.nameId !== 'undefined')
+      .filter(subj => subj && typeof subj.nameId === 'string' && subj.nameId.trim() !== '' && subj.nameId !== 'undefined' && subj.nameId.toLowerCase() !== 'nan')
       .sort((a, b) => a.id - b.id);
     
     // Create headers & dummy rows
