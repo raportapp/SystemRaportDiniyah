@@ -322,13 +322,6 @@ export default function RaportPrint({
 
                   {/* RAPORT TITLE */}
                   <div className="text-center my-4">
-                    {showRanking && (
-                      <span className="inline-block bg-emerald-700 text-white font-sans font-bold text-xs px-3.5 py-1 rounded-full mb-2 print:hidden">
-                        {manualWriteRank 
-                          ? '★ Peringkat Tulis Tangan (Manual)' 
-                          : `★ Peringkat ke-${rankInfo.rank} dari ${rankInfo.totalStudents} Santri di Kelas`}
-                      </span>
-                    )}
                     <h2 className="text-base font-bold underline decoration-double tracking-wide">
                       LAPORAN HASIL BELAJAR SANTRI / تقرير نتائج الدراسة
                     </h2>
@@ -366,16 +359,6 @@ export default function RaportPrint({
                           <td className="py-1 font-bold text-slate-500">Wali Kelas</td>
                           <td className="py-1 font-semibold text-slate-800">: {waliKelas}</td>
                         </tr>
-                        {showRanking && (
-                          <tr className="border-t border-slate-200/60 font-bold text-emerald-900 bg-emerald-50/20 print:bg-transparent">
-                            <td className="py-1 font-bold">Peringkat Kelas</td>
-                            <td className="py-1 font-extrabold text-emerald-950">
-                              {manualWriteRank 
-                                ? ": Ke- ......... dari ......... Santri" 
-                                : `: Ke-${rankInfo.rank} dari ${rankInfo.totalStudents} Santri`}
-                            </td>
-                          </tr>
-                        )}
                       </tbody>
                     </table>
                   </div>
