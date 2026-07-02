@@ -506,7 +506,7 @@ export default function RaportPrint({
                   </div>
 
                   {/* ATTENDANCE & KEPRIBADIAN SIDE-BY-SIDE */}
-                  <div className="grid grid-cols-2 gap-4 my-4 text-[11px] font-sans">
+                  <div className="grid grid-cols-2 gap-4 my-4 text-[11px] font-sans print-avoid-break">
                     {/* 1. KEPRIBADIAN TABLE */}
                     <table className="w-full border border-black border-collapse">
                       <thead>
@@ -581,7 +581,7 @@ export default function RaportPrint({
                   </div>
 
                   {/* 3. CATATAN GURU */}
-                  <div className="border border-black p-2 my-4 text-xs">
+                  <div className="border border-black p-2 my-4 text-xs print-avoid-break">
                     <p className="font-extrabold text-slate-950 border-b border-black pb-1 uppercase tracking-wider text-[10px] text-center">
                       CATATAN WALI KELAS
                     </p>
@@ -591,25 +591,25 @@ export default function RaportPrint({
                   </div>
 
                   {/* SIGNATURE GRID */}
-                  <div className="mt-8 text-xs text-center font-sans">
+                  <div className="mt-8 text-xs text-center font-sans print-avoid-break">
                     {/* TOP ROW: Orang Tua/Wali, Wali Kelas, Kepala Madin */}
                     <div className="grid grid-cols-3 gap-4 mb-8 items-start">
                       {/* Parent */}
-                      <div className="flex flex-col justify-between h-36">
+                      <div className="flex flex-col justify-between h-36 print-avoid-break">
                         <p className="font-semibold text-center">Orang Tua / Wali Santri</p>
                         <div className="h-20 flex items-center justify-center" />
                         <div className="border-b border-black w-32 mx-auto" />
                       </div>
 
                       {/* Wali Kelas */}
-                      <div className="flex flex-col justify-between h-36">
+                      <div className="flex flex-col justify-between h-36 print-avoid-break">
                         <p className="font-semibold text-center">Wali Kelas</p>
                         <div className="h-20 flex items-center justify-center" />
                         <p className="font-bold underline uppercase leading-tight text-center">{waliKelas}</p>
                       </div>
 
                       {/* Kepala Madin */}
-                      <div className="flex flex-col justify-between h-36">
+                      <div className="flex flex-col justify-between h-36 print-avoid-break">
                         <p className="font-semibold text-center">Kepala Madrasah Diniyah</p>
                         <div className="h-20 flex items-center justify-center">
                           {settings.ttdKepala && (
@@ -621,7 +621,7 @@ export default function RaportPrint({
                     </div>
 
                     {/* BOTTOM ROW: Pengasuh (Centered) */}
-                    <div className="flex flex-col items-center justify-between h-36 mt-4">
+                    <div className="flex flex-col items-center justify-between h-36 mt-4 print-avoid-break">
                       <p className="font-semibold text-center">
                         Mengetahui,<br />
                         Pengasuh PPTQ Al-Husna BR

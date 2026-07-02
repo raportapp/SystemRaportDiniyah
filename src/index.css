@@ -12,6 +12,10 @@
       page-break-after: always;
       break-after: page;
     }
+    .print-avoid-break {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
   }
 }
 
