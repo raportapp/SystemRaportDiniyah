@@ -288,25 +288,8 @@ export default function App() {
               await dbService.saveSettings(finalSettings);
             }
 
-            // --- Merging Offline/Local Data to Cloud ---
+            // Use cloud data as the single source of truth to prevent deleted items from being restored
             let finalUsers = [...loadedUsers];
-            try {
-              const storedLocalUsers = localStorage.getItem('raport_users');
-              if (storedLocalUsers) {
-                const localUsersList = JSON.parse(storedLocalUsers) as UserAccount[];
-                for (const lu of localUsersList) {
-                  const alreadyInCloud = loadedUsers.some(cu => cu.id === lu.id || cu.username.toLowerCase() === lu.username.toLowerCase());
-                  if (!alreadyInCloud) {
-                    finalUsers.push(lu);
-                    dbService.saveUser(lu).catch(e => console.error("Error background syncing user:", e));
-                  }
-                }
-              }
-            } catch (mergeErr) {
-              console.error("Error merging offline local users:", mergeErr);
-            }
-
-            // Ensure we have at least the default INITIAL_USERS if cloud database and local are both empty of users
             if (finalUsers.length === 0) {
               finalUsers = [...INITIAL_USERS];
               for (const iu of INITIAL_USERS) {
@@ -315,72 +298,9 @@ export default function App() {
             }
 
             let finalStudents = [...loadedStudents];
-            try {
-              const storedLocalStudents = localStorage.getItem('raport_students');
-              if (storedLocalStudents) {
-                const localStudentsList = JSON.parse(storedLocalStudents) as Student[];
-                for (const ls of localStudentsList) {
-                  const alreadyInCloud = loadedStudents.some(cs => cs.id === ls.id);
-                  if (!alreadyInCloud) {
-                    finalStudents.push(ls);
-                    dbService.saveStudent(ls).catch(e => console.error("Error background syncing student:", e));
-                  }
-                }
-              }
-            } catch (mergeErr) {
-              console.error("Error merging offline local students:", mergeErr);
-            }
-
             let finalSubjects = [...loadedSubjects];
-            try {
-              const storedLocalSubjects = localStorage.getItem('raport_subjects');
-              if (storedLocalSubjects) {
-                const localSubjectsList = JSON.parse(storedLocalSubjects) as Subject[];
-                for (const ls of localSubjectsList) {
-                  const alreadyInCloud = loadedSubjects.some(cs => cs.id === ls.id);
-                  if (!alreadyInCloud) {
-                    finalSubjects.push(ls);
-                    dbService.saveSubject(ls).catch(e => console.error("Error background syncing subject:", e));
-                  }
-                }
-              }
-            } catch (mergeErr) {
-              console.error("Error merging offline local subjects:", mergeErr);
-            }
-
             let finalClassSubjects = [...loadedClassSubjects];
-            try {
-              const storedLocalClassSubjects = localStorage.getItem('raport_class_subjects');
-              if (storedLocalClassSubjects) {
-                const localClassSubjectsList = JSON.parse(storedLocalClassSubjects) as ClassSubject[];
-                for (const lcs of localClassSubjectsList) {
-                  const alreadyInCloud = loadedClassSubjects.some(ccs => ccs.kelas === lcs.kelas && ccs.subjectId === lcs.subjectId);
-                  if (!alreadyInCloud) {
-                    finalClassSubjects.push(lcs);
-                    dbService.addClassSubject(lcs.kelas, lcs.subjectId).catch(e => console.error("Error background syncing class subject:", e));
-                  }
-                }
-              }
-            } catch (mergeErr) {
-              console.error("Error merging offline local class subjects:", mergeErr);
-            }
-
             let finalTeachers = [...loadedTeachers];
-            try {
-              const storedLocalTeachers = localStorage.getItem('raport_teachers');
-              if (storedLocalTeachers) {
-                const localTeachersList = JSON.parse(storedLocalTeachers) as ClassTeacher[];
-                for (const lt of localTeachersList) {
-                  const alreadyInCloud = loadedTeachers.some(ct => ct.kelas === lt.kelas);
-                  if (!alreadyInCloud) {
-                    finalTeachers.push(lt);
-                    dbService.saveTeacher(lt).catch(e => console.error("Error background syncing teacher:", e));
-                  }
-                }
-              }
-            } catch (mergeErr) {
-              console.error("Error merging offline local teachers:", mergeErr);
-            }
 
             localStorage.setItem('raport_students', JSON.stringify(finalStudents));
             localStorage.setItem('raport_subjects', JSON.stringify(finalSubjects));
