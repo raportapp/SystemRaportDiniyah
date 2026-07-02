@@ -1277,7 +1277,7 @@ export default function App() {
 
   const handlePrintClassClick = (kelasName: string) => {
     const classStudentIds = students
-      .filter(s => s.kelas === kelasName)
+      .filter(s => s.kelas === kelasName && s.semester === settings.semester && s.tahunAjaran === settings.tahunAjaran)
       .map(s => s.id);
     
     if (classStudentIds.length === 0) {
