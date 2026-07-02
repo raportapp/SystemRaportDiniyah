@@ -197,8 +197,8 @@ export default function StudentList({
 
   // Export to CSV function
   const handleExportCSV = () => {
-    // 1. Prepare base headers
-    const baseHeaders = ['NIS', 'Nama Lengkap', 'Kelas', 'Semester', 'Tahun Ajaran', 'Sakit', 'Izin', 'Alpa', 'Catatan'];
+    // 1. Prepare base headers including Kepribadian (Akhlaq, Kerajinan, Kedisiplinan, Kerapihan)
+    const baseHeaders = ['NIS', 'Nama Lengkap', 'Kelas', 'Semester', 'Tahun Ajaran', 'Sakit', 'Izin', 'Alpa', 'Catatan', 'Akhlaq', 'Kerajinan', 'Kedisiplinan', 'Kerapihan'];
     
     // Sort subjects by ID or name to keep order consistent, filtering out any invalid/undefined subjects
     const sortedSubjects = [...subjects]
@@ -218,7 +218,11 @@ export default function StudentList({
         st.sakit,
         st.izin,
         st.alpa,
-        st.catatan || ''
+        st.catatan || '',
+        st.akhlaq || '',
+        st.kerajinan || '',
+        st.kedisiplinan || '',
+        st.kerapihan || ''
       ];
       
       const subjectData = sortedSubjects.map(subj => {
@@ -269,6 +273,10 @@ export default function StudentList({
         'Izin': st.izin,
         'Alpa': st.alpa,
         'Catatan': st.catatan || '',
+        'Akhlaq': st.akhlaq || '',
+        'Kerajinan': st.kerajinan || '',
+        'Kedisiplinan': st.kedisiplinan || '',
+        'Kerapihan': st.kerapihan || '',
       };
       
       sortedSubjects.forEach(subj => {
@@ -289,6 +297,10 @@ export default function StudentList({
         'Izin': 0,
         'Alpa': 0,
         'Catatan': 'Tingkatkan prestasimu',
+        'Akhlaq': 'B',
+        'Kerajinan': 'B',
+        'Kedisiplinan': 'B',
+        'Kerapihan': 'B',
       };
       
       sortedSubjects.forEach(subj => {
@@ -334,6 +346,10 @@ export default function StudentList({
         'Izin': 2,
         'Alpa': 0,
         'Catatan': 'Sangat aktif dalam kegiatan pengajian dan sopan.',
+        'Akhlaq': 'A',
+        'Kerajinan': 'B',
+        'Kedisiplinan': 'A',
+        'Kerapihan': 'B',
       },
       {
         'NIS': '1002',
@@ -345,6 +361,10 @@ export default function StudentList({
         'Izin': 0,
         'Alpa': 0,
         'Catatan': 'Pertahankan prestasimu di bidang tajwid.',
+        'Akhlaq': 'A',
+        'Kerajinan': 'A',
+        'Kedisiplinan': 'B',
+        'Kerapihan': 'A',
       }
     ] as any[];
 
@@ -425,6 +445,10 @@ export default function StudentList({
           const rawIzin = findValue(row, ['Izin', 'izin', 'ijin']);
           const rawAlpa = findValue(row, ['Alpa', 'alpa', 'absen']);
           const rawCatatan = findValue(row, ['Catatan', 'catatan', 'Catatan Wali Kelas', 'catatan wali kelas']);
+          const rawAkhlaq = findValue(row, ['Akhlaq', 'akhlaq', 'Akhlak', 'akhlak']);
+          const rawKerajinan = findValue(row, ['Kerajinan', 'kerajinan']);
+          const rawKedisiplinan = findValue(row, ['Kedisiplinan', 'kedisiplinan']);
+          const rawKerapihan = findValue(row, ['Kerapihan', 'kerapihan', 'Kerapian', 'kerapian']);
 
           const nis = rawNis ? String(rawNis).trim() : '';
           const nama = rawNama ? String(rawNama).trim() : '';
@@ -438,6 +462,20 @@ export default function StudentList({
           const izin = isNaN(Number(rawIzin)) ? 0 : Number(rawIzin);
           const alpa = isNaN(Number(rawAlpa)) ? 0 : Number(rawAlpa);
           const catatan = rawCatatan ? String(rawCatatan).trim() : '';
+
+          const parseKepribadian = (val: any): 'A' | 'B' | 'C' | 'D' | '' => {
+            if (val === undefined || val === null || String(val).trim() === '') return '';
+            const normalized = String(val).trim().toUpperCase();
+            if (['A', 'B', 'C', 'D'].includes(normalized)) {
+              return normalized as 'A' | 'B' | 'C' | 'D';
+            }
+            return '';
+          };
+
+          const akhlaq = parseKepribadian(rawAkhlaq);
+          const kerajinan = parseKepribadian(rawKerajinan);
+          const kedisiplinan = parseKepribadian(rawKedisiplinan);
+          const kerapihan = parseKepribadian(rawKerapihan);
 
           if (!nis || !nama) {
             details.push(`Baris ${idx + 2}: Dilewati (Nama atau NIS kosong)`);
@@ -479,6 +517,10 @@ export default function StudentList({
               izin,
               alpa,
               catatan,
+              akhlaq: akhlaq || existingStudent.akhlaq || '',
+              kerajinan: kerajinan || existingStudent.kerajinan || '',
+              kedisiplinan: kedisiplinan || existingStudent.kedisiplinan || '',
+              kerapihan: kerapihan || existingStudent.kerapihan || '',
               grades: {
                 ...existingStudent.grades,
                 ...grades
@@ -499,6 +541,10 @@ export default function StudentList({
               izin,
               alpa,
               catatan,
+              akhlaq,
+              kerajinan,
+              kedisiplinan,
+              kerapihan,
               grades
             };
             updatedList.push(newStudent);
