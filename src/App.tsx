@@ -838,16 +838,6 @@ export default function App() {
     localStorage.setItem('raport_subjects', JSON.stringify(updated));
     dbService.saveSubject(newSub).catch(err => console.error("Error saving subject to cloud:", err));
 
-    // Automatically link this new subject to all registered classes
-    const uniqueClasses = Array.from(new Set(teachers.map(t => t.kelas)));
-    const newMappings = [...classSubjects];
-    uniqueClasses.forEach(kelas => {
-      newMappings.push({ kelas, subjectId: nextId });
-    });
-    setClassSubjects(newMappings);
-    localStorage.setItem('raport_class_subjects', JSON.stringify(newMappings));
-    dbService.saveClassSubjects(newMappings).catch(err => console.error("Error saving class subjects to cloud:", err));
-
     addSystemLog("Tambah Mapel Global", `Mata pelajaran baru ditambahkan: ${nameId} (${nameAr})`);
   };
 
