@@ -881,6 +881,49 @@ export default function App() {
     }
   };
 
+  // Subject Clear All Global
+  const handleClearGlobalSubjects = async () => {
+    if (currentUser?.role !== 'admin') {
+      alert("Hanya Administrator yang diperbolehkan menghapus semua mata pelajaran secara global!");
+      return;
+    }
+
+    if (subjects.length === 0) {
+      alert("Belum ada mata pelajaran global yang terdaftar.");
+      return;
+    }
+
+    const message = `PERINGATAN SEBAGAI INDUK MASAL:\n\nAnda akan menghapus secara MASSAL SELURUH mata pelajaran global (${subjects.length} mapel) beserta semua pemetaan kelasnya!\n\nTindakan ini bersifat permanen.\n\nApakah Anda yakin ingin melanjutkan?`;
+
+    if (confirm(message)) {
+      const secondCheck = confirm("Konfirmasi Kedua: Benar-benar ingin mengosongkan seluruh daftar mata pelajaran global?");
+      if (!secondCheck) return;
+
+      const subjectIds = subjects.map(s => s.id);
+      
+      setSubjects([]);
+      localStorage.setItem('raport_subjects', JSON.stringify([]));
+
+      const prevMappings = [...classSubjects];
+      setClassSubjects([]);
+      localStorage.setItem('raport_class_subjects', JSON.stringify([]));
+
+      try {
+        for (const id of subjectIds) {
+          dbService.deleteSubject(id).catch(err => console.error("Error deleting subject from cloud:", err));
+        }
+        for (const cs of prevMappings) {
+          dbService.removeClassSubject(cs.kelas, cs.subjectId).catch(err => console.error("Error removing class subject from cloud:", err));
+        }
+        addSystemLog("Hapus Semua Mapel", `Menghapus massal seluruh ${subjectIds.length} mata pelajaran global.`);
+        alert(`Alhamdulillah, berhasil menghapus seluruh mata pelajaran global! Silakan input manual.`);
+      } catch (err: any) {
+        console.error("Gagal menghapus semua mapel:", err);
+        alert(`Gagal menyinkronkan beberapa penghapusan ke cloud: ${err.message || err}`);
+      }
+    }
+  };
+
   // Subject link to class
   const handleAddSubjectToClass = (kelas: string, subjectId: number) => {
     if (currentUser?.role === 'teacher') {
@@ -1774,6 +1817,7 @@ export default function App() {
               onAddSubjectToClass={handleAddSubjectToClass}
               onRemoveSubjectFromClass={handleRemoveSubjectFromClass}
               onClearClassSubjects={handleClearClassSubjects}
+              onClearGlobalSubjects={handleClearGlobalSubjects}
             />
           )}
 

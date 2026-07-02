@@ -14,6 +14,7 @@ interface SubjectManagerProps {
   onAddSubjectToClass: (kelas: string, subjectId: number) => void;
   onRemoveSubjectFromClass: (kelas: string, subjectId: number) => void;
   onClearClassSubjects?: (kelas: string) => void;
+  onClearGlobalSubjects?: () => void;
 }
 
 export default function SubjectManager({
@@ -27,7 +28,8 @@ export default function SubjectManager({
   onDeleteGlobalSubject,
   onAddSubjectToClass,
   onRemoveSubjectFromClass,
-  onClearClassSubjects
+  onClearClassSubjects,
+  onClearGlobalSubjects
 }: SubjectManagerProps) {
   // Determine classes managed by this teacher
   const managedClasses = teachers
@@ -238,10 +240,22 @@ export default function SubjectManager({
         <div className="lg:col-span-2 space-y-6">
           {/* Global Subject list */}
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b">
-              <BookOpen size={16} />
-              Daftar Semua Mapel Global ({subjects.length})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b gap-2">
+              <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <BookOpen size={16} />
+                Daftar Semua Mapel Global ({subjects.length})
+              </h3>
+              {isAdmin && subjects.length > 0 && onClearGlobalSubjects && (
+                <button
+                  onClick={onClearGlobalSubjects}
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 transition active:scale-95 cursor-pointer"
+                  title="Hapus massal seluruh mata pelajaran global"
+                >
+                  <Trash2 size={13} />
+                  <span>Hapus Semua Mapel Global</span>
+                </button>
+              )}
+            </div>
             <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
               {subjects.map(sub => (
                 <div key={sub.id} className="py-2.5 flex items-center justify-between text-sm">
