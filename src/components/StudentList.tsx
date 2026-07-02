@@ -200,8 +200,10 @@ export default function StudentList({
     // 1. Prepare base headers
     const baseHeaders = ['NIS', 'Nama Lengkap', 'Kelas', 'Semester', 'Tahun Ajaran', 'Sakit', 'Izin', 'Alpa', 'Catatan'];
     
-    // Sort subjects by ID or name to keep order consistent
-    const sortedSubjects = [...subjects].sort((a, b) => a.id - b.id);
+    // Sort subjects by ID or name to keep order consistent, filtering out any invalid/undefined subjects
+    const sortedSubjects = [...subjects]
+      .filter(subj => subj && subj.nameId && subj.nameId.trim() !== '' && subj.nameId !== 'undefined')
+      .sort((a, b) => a.id - b.id);
     const subjectHeaders = sortedSubjects.map(subj => `Nilai: ${subj.nameId}`);
     const headers = [...baseHeaders, ...subjectHeaders];
 
@@ -252,7 +254,9 @@ export default function StudentList({
 
   // Export to Excel function
   const handleExportExcel = () => {
-    const sortedSubjects = [...subjects].sort((a, b) => a.id - b.id);
+    const sortedSubjects = [...subjects]
+      .filter(subj => subj && subj.nameId && subj.nameId.trim() !== '' && subj.nameId !== 'undefined')
+      .sort((a, b) => a.id - b.id);
     
     const rows = sortedFilteredStudents.map(st => {
       const rowObj: any = {
@@ -314,7 +318,9 @@ export default function StudentList({
 
   // Download empty/blank Excel template with current subjects
   const handleDownloadTemplate = () => {
-    const sortedSubjects = [...subjects].sort((a, b) => a.id - b.id);
+    const sortedSubjects = [...subjects]
+      .filter(subj => subj && subj.nameId && subj.nameId.trim() !== '' && subj.nameId !== 'undefined')
+      .sort((a, b) => a.id - b.id);
     
     // Create headers & dummy rows
     const rows = [
