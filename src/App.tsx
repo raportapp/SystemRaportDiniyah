@@ -466,6 +466,38 @@ export default function App() {
     };
   }, []);
 
+  // Helper: title case capitalization for words (e.g. names, places, dates, subjects)
+  const toTitleCase = (str: string | undefined | null): string => {
+    if (!str) return '';
+    return str
+      .trim()
+      .split(/\s+/)
+      .map(word => {
+        if (!word) return '';
+        return word
+          .split('-')
+          .map(subWord => subWord.charAt(0).toUpperCase() + subWord.slice(1).toLowerCase())
+          .join('-');
+      })
+      .join(' ');
+  };
+
+  // Self-healing: Automatically clean up any empty subjects (where Indonesian or Arabic name is missing or empty)
+  useEffect(() => {
+    if (subjects.length > 0) {
+      const emptySubjects = subjects.filter(s => !s.nameId || s.nameId.trim() === '' || !s.nameAr || s.nameAr.trim() === '');
+      if (emptySubjects.length > 0) {
+        const cleaned = subjects.filter(s => s.nameId && s.nameId.trim() !== '' && s.nameAr && s.nameAr.trim() !== '');
+        setSubjects(cleaned);
+        localStorage.setItem('raport_subjects', JSON.stringify(cleaned));
+        emptySubjects.forEach(s => {
+          dbService.deleteSubject(s.id).catch(err => console.error("Error cleaning empty subject from cloud:", err));
+        });
+        addSystemLog("Bersihkan Mapel Kosong", `Menghapus otomatis ${emptySubjects.length} mata pelajaran kosong.`);
+      }
+    }
+  }, [subjects]);
+
   // Helper: append a log item
   const addSystemLog = (action: string, details: string) => {
     const newLog: SystemLog = {
@@ -505,36 +537,48 @@ export default function App() {
       return;
     }
 
+    // Format fields dynamically with Title Case
+    const formattedData = {
+      ...studentData,
+      nama: toTitleCase(studentData.nama),
+      tempatLahir: toTitleCase(studentData.tempatLahir),
+      tanggalLahir: toTitleCase(studentData.tanggalLahir),
+      alamat: toTitleCase(studentData.alamat),
+      namaAyah: toTitleCase(studentData.namaAyah),
+      namaIbu: toTitleCase(studentData.namaIbu),
+      kelas: toTitleCase(studentData.kelas)
+    };
+
     // 2. Validate NIS uniqueness per semester and school year (tahunAjaran)
-    const normalizedNis = studentData.nis.trim().toLowerCase();
+    const normalizedNis = formattedData.nis.trim().toLowerCase();
     const duplicateNisStudent = students.find(s => 
-      s.id !== studentData.id &&
+      s.id !== formattedData.id &&
       s.nis.trim().toLowerCase() === normalizedNis &&
-      s.semester === studentData.semester &&
-      s.tahunAjaran === studentData.tahunAjaran
+      s.semester === formattedData.semester &&
+      s.tahunAjaran === formattedData.tahunAjaran
     );
     if (duplicateNisStudent) {
-      alert(`Gagal menyimpan: NIS "${studentData.nis}" sudah terdaftar untuk santri lain (${duplicateNisStudent.nama}) pada Semester ${studentData.semester} Tahun Ajaran ${studentData.tahunAjaran}!`);
+      alert(`Gagal menyimpan: NIS "${formattedData.nis}" sudah terdaftar untuk santri lain (${duplicateNisStudent.nama}) pada Semester ${formattedData.semester} Tahun Ajaran ${formattedData.tahunAjaran}!`);
       return;
     }
 
     // Validate Name + Class uniqueness per semester and school year to prevent duplicate entries
-    const normalizedName = studentData.nama.trim().toLowerCase();
+    const normalizedName = formattedData.nama.trim().toLowerCase();
     const duplicateNameStudent = students.find(s =>
-      s.id !== studentData.id &&
+      s.id !== formattedData.id &&
       s.nama.trim().toLowerCase() === normalizedName &&
-      s.kelas === studentData.kelas &&
-      s.semester === studentData.semester &&
-      s.tahunAjaran === studentData.tahunAjaran
+      s.kelas === formattedData.kelas &&
+      s.semester === formattedData.semester &&
+      s.tahunAjaran === formattedData.tahunAjaran
     );
     if (duplicateNameStudent) {
-      alert(`Gagal menyimpan: Santri bernama "${studentData.nama}" sudah terdaftar di Kelas "${studentData.kelas}" pada Semester ${studentData.semester} Tahun Ajaran ${studentData.tahunAjaran}!`);
+      alert(`Gagal menyimpan: Santri bernama "${formattedData.nama}" sudah terdaftar di Kelas "${formattedData.kelas}" pada Semester ${formattedData.semester} Tahun Ajaran ${formattedData.tahunAjaran}!`);
       return;
     }
 
     // 3. Validate grades (must be integer between 0 and 100)
-    if (studentData.grades) {
-      for (const [subId, score] of Object.entries(studentData.grades)) {
+    if (formattedData.grades) {
+      for (const [subId, score] of Object.entries(formattedData.grades)) {
         const numScore = Number(score);
         if (isNaN(numScore) || !Number.isInteger(numScore) || numScore < 0 || numScore > 100) {
           alert(`Gagal menyimpan: Nilai mata pelajaran harus berupa bilangan bulat antara 0 - 100!`);
@@ -546,26 +590,26 @@ export default function App() {
     let updatedList: Student[] = [];
     let updatedStudent: Student;
 
-    if (studentData.id) {
+    if (formattedData.id) {
       // Edit mode
-      const existing = students.find(s => s.id === studentData.id);
+      const existing = students.find(s => s.id === formattedData.id);
       if (currentUser?.role === 'teacher' && existing?.createdBy && existing.createdBy !== currentUser.username) {
         alert("Anda tidak memiliki hak untuk mengedit santri ini karena santri ini ditambahkan oleh guru lain!");
         return;
       }
-      updatedStudent = { ...studentData } as Student;
-      updatedList = students.map(s => s.id === studentData.id ? updatedStudent : s);
-      addSystemLog("Ubah Santri", `Memperbarui data dan nilai santri: ${studentData.nama} (NIS: ${studentData.nis})`);
+      updatedStudent = { ...formattedData } as Student;
+      updatedList = students.map(s => s.id === formattedData.id ? updatedStudent : s);
+      addSystemLog("Ubah Santri", `Memperbarui data dan nilai santri: ${formattedData.nama} (NIS: ${formattedData.nis})`);
     } else {
       // Add mode
       const newId = `stud-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
       updatedStudent = {
-        ...studentData,
+        ...formattedData,
         id: newId,
         createdBy: currentUser?.username || 'system'
       } as Student;
       updatedList = [updatedStudent, ...students];
-      addSystemLog("Tambah Santri", `Menambahkan santri baru: ${studentData.nama} (NIS: ${studentData.nis})`);
+      addSystemLog("Tambah Santri", `Menambahkan santri baru: ${formattedData.nama} (NIS: ${formattedData.nis})`);
     }
 
     setStudents(updatedList);
@@ -581,8 +625,23 @@ export default function App() {
       return;
     }
 
-    // Validate all records first before saving
-    for (const st of updatedStudentsList) {
+    // Process and format with Title Case first
+    const processedList = updatedStudentsList.map(st => {
+      return {
+        ...st,
+        nama: toTitleCase(st.nama),
+        tempatLahir: toTitleCase(st.tempatLahir),
+        tanggalLahir: toTitleCase(st.tanggalLahir),
+        alamat: toTitleCase(st.alamat),
+        namaAyah: toTitleCase(st.namaAyah),
+        namaIbu: toTitleCase(st.namaIbu),
+        kelas: toTitleCase(st.kelas),
+        createdBy: st.createdBy || currentUser?.username || 'system'
+      };
+    });
+
+    // Validate all processed records
+    for (const st of processedList) {
       if (!st.nama || !st.nama.trim()) {
         alert("Gagal Impor: Ditemukan data santri dengan Nama kosong!");
         return;
@@ -596,8 +655,8 @@ export default function App() {
         return;
       }
 
-      // NIS Uniqueness per semester and school year (tahunAjaran) check in the list
-      const duplicateInList = updatedStudentsList.some(other => 
+      // NIS Uniqueness per semester and school year check in the list
+      const duplicateInList = processedList.some(other => 
         other.id !== st.id && 
         other.nis.trim().toLowerCase() === st.nis.trim().toLowerCase() && 
         other.semester === st.semester &&
@@ -609,7 +668,7 @@ export default function App() {
       }
 
       // Name + Class uniqueness per semester and school year check in the list
-      const duplicateNameInList = updatedStudentsList.some(other =>
+      const duplicateNameInList = processedList.some(other =>
         other.id !== st.id &&
         other.nama.trim().toLowerCase() === st.nama.trim().toLowerCase() &&
         other.kelas === st.kelas &&
@@ -632,14 +691,6 @@ export default function App() {
         }
       }
     }
-
-    // For bulk import, set createdBy for newly added students if they don't have it
-    const processedList = updatedStudentsList.map(st => {
-      if (!st.createdBy) {
-        return { ...st, createdBy: currentUser?.username || 'system' };
-      }
-      return st;
-    });
 
     setStudents(processedList);
     localStorage.setItem('raport_students', JSON.stringify(processedList));
@@ -680,8 +731,15 @@ export default function App() {
 
   // Subject Add Global
   const handleAddGlobalSubject = (nameId: string, nameAr: string, kkm: number, category?: 'A' | 'B' | 'C') => {
+    const trimmedId = nameId.trim();
+    const trimmedAr = nameAr.trim();
+    if (!trimmedId || !trimmedAr) {
+      alert("Gagal Tambah Mapel: Nama mata pelajaran Indonesia dan Arab tidak boleh kosong!");
+      return;
+    }
+    const formattedNameId = toTitleCase(trimmedId);
     const nextId = subjects.length > 0 ? Math.max(...subjects.map(s => s.id)) + 1 : 1;
-    const newSub: Subject = { id: nextId, nameId, nameAr, kkm, category: category || 'A' };
+    const newSub: Subject = { id: nextId, nameId: formattedNameId, nameAr: trimmedAr, kkm, category: category || 'A' };
     const updated = [...subjects, newSub];
     
     setSubjects(updated);
@@ -784,7 +842,8 @@ export default function App() {
       return;
     }
 
-    const newTeacher = { kelas, waliKelas };
+    const formattedWaliKelas = toTitleCase(waliKelas);
+    const newTeacher = { kelas, waliKelas: formattedWaliKelas };
     const updated = [...teachers, newTeacher];
     setTeachers(updated);
     localStorage.setItem('raport_teachers', JSON.stringify(updated));
@@ -794,7 +853,8 @@ export default function App() {
 
   // Wali Kelas Update
   const handleUpdateTeacher = (kelas: string, waliKelas: string) => {
-    const updatedTeacher = { kelas, waliKelas };
+    const formattedWaliKelas = toTitleCase(waliKelas);
+    const updatedTeacher = { kelas, waliKelas: formattedWaliKelas };
     const updated = teachers.map(t => t.kelas === kelas ? updatedTeacher : t);
     setTeachers(updated);
     localStorage.setItem('raport_teachers', JSON.stringify(updated));
@@ -815,18 +875,25 @@ export default function App() {
 
   // Settings Save
   const handleSaveSettings = async (updatedSettings: SystemSettings) => {
+    const formattedSettings = {
+      ...updatedSettings,
+      namaPengasuh: toTitleCase(updatedSettings.namaPengasuh),
+      namaKepala: toTitleCase(updatedSettings.namaKepala),
+      tempatRaport: toTitleCase(updatedSettings.tempatRaport),
+      tanggalRaport: toTitleCase(updatedSettings.tanggalRaport)
+    };
     try {
       const { compressSettingsImages } = await import('./utils/imageCompressor');
-      const compressed = await compressSettingsImages(updatedSettings);
+      const compressed = await compressSettingsImages(formattedSettings);
       setSettings(compressed);
       localStorage.setItem('raport_settings', JSON.stringify(compressed));
       dbService.saveSettings(compressed).catch(err => console.error("Error saving settings to cloud:", err));
       addSystemLog("Update Pengaturan", "Memperbarui identitas dan pejabat tanda tangan sekolah.");
     } catch (e) {
       console.error("Error compressing settings images:", e);
-      setSettings(updatedSettings);
-      localStorage.setItem('raport_settings', JSON.stringify(updatedSettings));
-      dbService.saveSettings(updatedSettings).catch(err => console.error("Error saving settings to cloud:", err));
+      setSettings(formattedSettings);
+      localStorage.setItem('raport_settings', JSON.stringify(formattedSettings));
+      dbService.saveSettings(formattedSettings).catch(err => console.error("Error saving settings to cloud:", err));
       addSystemLog("Update Pengaturan", "Memperbarui identitas dan pejabat tanda tangan sekolah (tanpa kompresi).");
     }
   };
@@ -983,10 +1050,11 @@ export default function App() {
       hashedPassword = await hashPassword(password);
     }
 
+    const formattedFullname = toTitleCase(fullname);
     const newUser: UserAccount = {
       id: `user-${Date.now()}`,
       username,
-      fullname,
+      fullname: formattedFullname,
       role,
       password: hashedPassword,
       email: email || undefined
@@ -1109,12 +1177,14 @@ export default function App() {
   };
 
   const handleUpdateProfile = async (updatedUser: UserAccount) => {
+    const formattedFullname = toTitleCase(updatedUser.fullname);
+    const formattedUser = { ...updatedUser, fullname: formattedFullname };
     // Sync fullname changes with Wali Kelas list
     const oldFullname = currentUser?.fullname;
-    if (currentUser?.role === 'teacher' && oldFullname && oldFullname !== updatedUser.fullname) {
+    if (currentUser?.role === 'teacher' && oldFullname && oldFullname !== formattedUser.fullname) {
       const updatedTeachers = teachers.map(t => {
         if (t.waliKelas.toLowerCase() === oldFullname.toLowerCase()) {
-          return { ...t, waliKelas: updatedUser.fullname };
+          return { ...t, waliKelas: formattedUser.fullname };
         }
         return t;
       });
@@ -1123,26 +1193,26 @@ export default function App() {
       
       // Persist changes to Firebase
       for (const t of updatedTeachers) {
-        if (t.waliKelas === updatedUser.fullname) {
+        if (t.waliKelas === formattedUser.fullname) {
           dbService.saveTeacher(t).catch(err => console.error("Error saving updated teacher to cloud on name change:", err));
         }
       }
     }
 
     // 1. Update users array
-    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    const updatedUsers = users.map(u => u.id === formattedUser.id ? formattedUser : u);
     setUsers(updatedUsers);
     localStorage.setItem('raport_users', JSON.stringify(updatedUsers));
 
     // 2. Update current logged-in user
-    setCurrentUser(updatedUser);
-    localStorage.setItem('raport_logged_in_user', JSON.stringify(updatedUser));
+    setCurrentUser(formattedUser);
+    localStorage.setItem('raport_logged_in_user', JSON.stringify(formattedUser));
 
     // 3. Save to database cloud
-    await dbService.saveUser(updatedUser);
+    await dbService.saveUser(formattedUser);
 
     // 4. Log
-    addSystemLog("Update Profil", `Mengubah rincian profil pribadi: ${updatedUser.fullname}`);
+    addSystemLog("Update Profil", `Mengubah rincian profil pribadi: ${formattedUser.fullname}`);
   };
 
   // Quick triggers from list
