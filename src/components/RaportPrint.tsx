@@ -24,6 +24,8 @@ export default function RaportPrint({
   onBack
 }: RaportPrintProps) {
   const [printMode, setPrintMode] = useState<'both' | 'cover' | 'grades'>('both');
+  const [showRanking, setShowRanking] = useState<boolean>(true);
+  const [manualWriteRank, setManualWriteRank] = useState<boolean>(false);
 
   const toArabicDigits = (num: number | string): string => {
     const map: Record<string, string> = {
@@ -123,6 +125,33 @@ export default function RaportPrint({
           <Printer size={16} />
           <span>Cetak Raport</span>
         </button>
+      </div>
+
+      {/* Options Sub-Bar - Hidden during printing */}
+      <div className="bg-emerald-50/50 border-b border-emerald-100 px-6 py-3.5 flex flex-wrap items-center gap-6 print:hidden max-w-[800px] mx-auto rounded-xl shadow-sm mt-4">
+        <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+          <span>🏆</span> Opsi Cetak Peringkat:
+        </span>
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showRanking}
+            onChange={(e) => setShowRanking(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+          />
+          <span>Tampilkan Keterangan Peringkat di Rapor</span>
+        </label>
+        {showRanking && (
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={manualWriteRank}
+              onChange={(e) => setManualWriteRank(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+            />
+            <span>Input Manual Peringkat Setelah Di-print (Tulis Tangan Wali Kelas Menggunakan Pulpen)</span>
+          </label>
+        )}
       </div>
 
       {/* Main A4 Wrapper */}
@@ -293,9 +322,13 @@ export default function RaportPrint({
 
                   {/* RAPORT TITLE */}
                   <div className="text-center my-4">
-                    <span className="inline-block bg-emerald-700 text-white font-sans font-bold text-xs px-3.5 py-1 rounded-full mb-2 print:hidden">
-                      ★ Peringkat ke-{rankInfo.rank} dari {rankInfo.totalStudents} Santri di Kelas
-                    </span>
+                    {showRanking && (
+                      <span className="inline-block bg-emerald-700 text-white font-sans font-bold text-xs px-3.5 py-1 rounded-full mb-2 print:hidden">
+                        {manualWriteRank 
+                          ? '★ Peringkat Tulis Tangan (Manual)' 
+                          : `★ Peringkat ke-${rankInfo.rank} dari ${rankInfo.totalStudents} Santri di Kelas`}
+                      </span>
+                    )}
                     <h2 className="text-base font-bold underline decoration-double tracking-wide">
                       LAPORAN HASIL BELAJAR SANTRI / تقرير نتائج الدراسة
                     </h2>
@@ -333,10 +366,16 @@ export default function RaportPrint({
                           <td className="py-1 font-bold text-slate-500">Wali Kelas</td>
                           <td className="py-1 font-semibold text-slate-800">: {waliKelas}</td>
                         </tr>
-                        <tr className="border-t border-slate-200/60 font-bold text-emerald-900 bg-emerald-50/20 print:bg-transparent">
-                          <td className="py-1 font-bold">Peringkat Kelas</td>
-                          <td className="py-1 font-extrabold text-emerald-950">: Ke-{rankInfo.rank} dari {rankInfo.totalStudents} Santri</td>
-                        </tr>
+                        {showRanking && (
+                          <tr className="border-t border-slate-200/60 font-bold text-emerald-900 bg-emerald-50/20 print:bg-transparent">
+                            <td className="py-1 font-bold">Peringkat Kelas</td>
+                            <td className="py-1 font-extrabold text-emerald-950">
+                              {manualWriteRank 
+                                ? ": Ke- ......... dari ......... Santri" 
+                                : `: Ke-${rankInfo.rank} dari ${rankInfo.totalStudents} Santri`}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -460,6 +499,25 @@ export default function RaportPrint({
                           <td className="p-1.5 border-r border-black text-right font-serif uppercase text-slate-900">متوسط الدرجة</td>
                           <td className="p-1.5 text-center font-serif"></td>
                         </tr>
+
+                        {/* FOOTER ROW 3: PERINGKAT (DETERMINED BY USER TOGGLE) */}
+                        {showRanking && (
+                          <tr className="border border-black font-bold bg-slate-50">
+                            <td className="p-1.5 border-r border-black text-center"></td>
+                            <td className="p-1.5 border-r border-black text-left uppercase text-slate-900">Peringkat / الرتبة</td>
+                            <td className="p-1.5 text-center font-sans font-bold text-[11px] py-2" colSpan={6}>
+                              {manualWriteRank ? (
+                                <span className="tracking-widest">
+                                  Peringkat ke .................... dari .................... santri
+                                </span>
+                              ) : (
+                                <span className="tracking-wide text-emerald-950">
+                                  Peringkat ke {rankInfo.rank} dari {rankInfo.totalStudents} santri
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
