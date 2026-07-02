@@ -22,6 +22,7 @@ interface StudentListProps {
   onPrintClass: (kelas: string) => void;
   onBulkSaveStudents?: (updatedStudentsList: Student[]) => void;
   onPrintMultipleStudents?: (studentIds: string[]) => void;
+  onDeleteClassStudents?: (kelas: string) => void;
 }
 
 export default function StudentList({
@@ -40,7 +41,8 @@ export default function StudentList({
   onViewRaport,
   onPrintClass,
   onBulkSaveStudents,
-  onPrintMultipleStudents
+  onPrintMultipleStudents,
+  onDeleteClassStudents
 }: StudentListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
@@ -93,6 +95,15 @@ export default function StudentList({
     }
     if (userRole === 'admin') return true;
     return managedClasses.includes(st.kelas);
+  };
+
+  const canModifyClass = (className: string) => {
+    if (settings?.nilaiRaportSelesai) {
+      if (userRole === 'admin') return true;
+      return false;
+    }
+    if (userRole === 'admin') return true;
+    return managedClasses.includes(className);
   };
 
   // Filter students based on active semester and year
@@ -1249,6 +1260,17 @@ export default function StudentList({
                       <span>👤</span>
                       <span>Biodata Kelas</span>
                     </button>
+
+                    {canModifyClass(className) && list.length > 0 && onDeleteClassStudents && (
+                      <button
+                        onClick={() => onDeleteClassStudents(className)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 transition active:scale-95 cursor-pointer"
+                        title="Hapus massal seluruh data santri di kelas ini"
+                      >
+                        <Trash2 size={13} />
+                        <span>Hapus Massal Santri</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 

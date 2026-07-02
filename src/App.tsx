@@ -729,6 +729,98 @@ export default function App() {
     }
   };
 
+  // Bulk Student Deletion per Class
+  const handleDeleteClassStudents = async (kelas: string) => {
+    if (settings?.nilaiRaportSelesai && currentUser?.role !== 'admin') {
+      alert("Penginputan nilai semester ini telah ditutup/dikunci oleh Administrator!");
+      return;
+    }
+
+    const classStudents = students.filter(s => 
+      s.kelas === kelas && 
+      s.semester === settings.semester && 
+      s.tahunAjaran === settings.tahunAjaran
+    );
+
+    if (classStudents.length === 0) {
+      alert(`Tidak ada data santri untuk kelas ${kelas} pada Semester ${settings.semester} Tahun Ajaran ${settings.tahunAjaran}.`);
+      return;
+    }
+
+    if (currentUser?.role === 'teacher') {
+      const isWali = teachers.some(t => t.kelas === kelas && t.waliKelas.toLowerCase() === currentUser.fullname.toLowerCase());
+      if (!isWali) {
+        alert("Anda hanya dapat melakukan hapus massal untuk kelas asuhan Anda sendiri!");
+        return;
+      }
+    }
+
+    const message = `PERINGATAN SEBAGAI INDUK MASAL:\n\nAnda akan menghapus secara MASSAL seluruh data (${classStudents.length} santri) beserta nilai raportnya di Kelas "${kelas}" pada Semester ${settings.semester} Tahun Ajaran ${settings.tahunAjaran}!\n\nTindakan ini bersifat permanen dan tidak dapat dibatalkan.\n\nApakah Anda yakin ingin melanjutkan?`;
+    
+    if (confirm(message)) {
+      const secondCheck = confirm(`Konfirmasi Kedua: Benar-benar ingin mengosongkan seluruh data santri di kelas "${kelas}"?`);
+      if (!secondCheck) return;
+
+      const studentIdsToDelete = classStudents.map(s => s.id);
+      const updated = students.filter(s => !studentIdsToDelete.includes(s.id));
+
+      setStudents(updated);
+      localStorage.setItem('raport_students', JSON.stringify(updated));
+
+      try {
+        for (const id of studentIdsToDelete) {
+          dbService.deleteStudent(id).catch(err => console.error("Error deleting class student from cloud:", err));
+        }
+        addSystemLog("Hapus Massal Kelas", `Menghapus massal ${classStudents.length} santri di Kelas: ${kelas} (${settings.semester} - ${settings.tahunAjaran})`);
+        alert(`Alhamdulillah, berhasil menghapus massal ${classStudents.length} data santri di kelas ${kelas}!`);
+      } catch (err: any) {
+        console.error("Gagal melakukan hapus massal:", err);
+        alert(`Gagal menghapus beberapa data dari cloud: ${err.message || err}`);
+      }
+    }
+  };
+
+  // Bulk Subject Mapping Deletion per Class
+  const handleClearClassSubjects = async (kelas: string) => {
+    if (settings?.nilaiRaportSelesai && currentUser?.role !== 'admin') {
+      alert("Penginputan nilai semester ini telah ditutup/dikunci oleh Administrator!");
+      return;
+    }
+
+    const mappedSubjects = classSubjects.filter(cs => cs.kelas === kelas);
+    if (mappedSubjects.length === 0) {
+      alert(`Kelas "${kelas}" belum memiliki pemetaan mata pelajaran.`);
+      return;
+    }
+
+    if (currentUser?.role === 'teacher') {
+      const isWali = teachers.some(t => t.kelas === kelas && t.waliKelas.toLowerCase() === currentUser.fullname.toLowerCase());
+      if (!isWali) {
+        alert("Anda hanya dapat menghapus pemetaan mata pelajaran kelas asuhan Anda sendiri!");
+        return;
+      }
+    }
+
+    const message = `Apakah Anda yakin ingin menghapus massal seluruh pemetaan mata pelajaran (${mappedSubjects.length} mapel) untuk Kelas "${kelas}"?\n\nSantri di kelas ini akan kembali ke pengaturan daftar mata pelajaran global.`;
+    
+    if (confirm(message)) {
+      const updated = classSubjects.filter(cs => cs.kelas !== kelas);
+      setClassSubjects(updated);
+      localStorage.setItem('raport_class_subjects', JSON.stringify(updated));
+
+      try {
+        for (const ms of mappedSubjects) {
+          dbService.removeClassSubject(kelas, ms.subjectId).catch(err => console.error("Error deleting class subject mapping from cloud:", err));
+        }
+        addSystemLog("Hapus Massal Mapel Kelas", `Menghapus seluruh pemetaan mapel (${mappedSubjects.length} mapel) untuk kelas ${kelas}`);
+        alert(`Alhamdulillah, berhasil menghapus seluruh pemetaan mata pelajaran untuk kelas ${kelas}!`);
+      } catch (err: any) {
+        console.error("Gagal menghapus pemetaan mapel kelas:", err);
+        alert(`Gagal menyinkronkan ke cloud: ${err.message || err}`);
+      }
+    }
+  };
+
   // Subject Add Global
   const handleAddGlobalSubject = (nameId: string, nameAr: string, kkm: number, category?: 'A' | 'B' | 'C') => {
     const trimmedId = nameId.trim();
@@ -1634,6 +1726,7 @@ export default function App() {
               onPrintClass={handlePrintClassClick}
               onBulkSaveStudents={handleBulkSaveStudents}
               onPrintMultipleStudents={handlePrintMultipleStudents}
+              onDeleteClassStudents={handleDeleteClassStudents}
             />
           )}
 
@@ -1680,6 +1773,7 @@ export default function App() {
               onDeleteGlobalSubject={handleDeleteGlobalSubject}
               onAddSubjectToClass={handleAddSubjectToClass}
               onRemoveSubjectFromClass={handleRemoveSubjectFromClass}
+              onClearClassSubjects={handleClearClassSubjects}
             />
           )}
 

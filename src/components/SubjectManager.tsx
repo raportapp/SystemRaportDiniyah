@@ -13,6 +13,7 @@ interface SubjectManagerProps {
   onDeleteGlobalSubject: (id: number) => void;
   onAddSubjectToClass: (kelas: string, subjectId: number) => void;
   onRemoveSubjectFromClass: (kelas: string, subjectId: number) => void;
+  onClearClassSubjects?: (kelas: string) => void;
 }
 
 export default function SubjectManager({
@@ -25,7 +26,8 @@ export default function SubjectManager({
   onAddGlobalSubject,
   onDeleteGlobalSubject,
   onAddSubjectToClass,
-  onRemoveSubjectFromClass
+  onRemoveSubjectFromClass,
+  onClearClassSubjects
 }: SubjectManagerProps) {
   // Determine classes managed by this teacher
   const managedClasses = teachers
@@ -302,9 +304,21 @@ export default function SubjectManager({
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-bold text-gray-400">
-                        {mapelList.length} Mata Pelajaran
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400">
+                          {mapelList.length} Mata Pelajaran
+                        </span>
+                        {(isAdmin || managedClasses.includes(kelasName)) && mapelList.length > 0 && onClearClassSubjects && (
+                          <button
+                            onClick={() => onClearClassSubjects(kelasName)}
+                            className="flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md border border-red-150 transition active:scale-95 cursor-pointer ml-1"
+                            title="Hapus seluruh pemetaan mata pelajaran di kelas ini"
+                          >
+                            <Trash2 size={11} />
+                            <span>Kosongkan Mapel</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {mapelList.length > 0 ? (
