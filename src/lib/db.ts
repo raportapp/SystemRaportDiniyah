@@ -347,11 +347,17 @@ const rawDbService = {
   // --- MASS SEEDING (FOR MIGRATION) ---
   async isDatabaseEmpty(): Promise<boolean> {
     try {
-      const q = query(collection(db, STUDENTS_COLL), limit(1));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.empty;
+      const docRef = doc(db, SETTINGS_COLL, 'global');
+      const docSnap = await getDoc(docRef);
+      return !docSnap.exists();
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, STUDENTS_COLL);
+      try {
+        const q = query(collection(db, STUDENTS_COLL), limit(1));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.empty;
+      } catch (innerErr) {
+        handleFirestoreError(error, OperationType.GET, SETTINGS_COLL);
+      }
     }
   },
 
