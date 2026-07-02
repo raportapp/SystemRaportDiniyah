@@ -575,10 +575,11 @@ export default function App() {
         return;
       }
 
-      // NIS Uniqueness per semester and school year check in the list
+      // NIS Uniqueness per semester and school year check in the list (strip leading zeros)
+      const cleanNis = (val: string) => val.trim().replace(/^0+/, '');
       const duplicateInList = processedList.some(other => 
         other.id !== st.id && 
-        other.nis.trim().toLowerCase() === st.nis.trim().toLowerCase() && 
+        cleanNis(other.nis) === cleanNis(st.nis) && 
         other.semester === st.semester &&
         other.tahunAjaran === st.tahunAjaran
       );
@@ -587,10 +588,11 @@ export default function App() {
         return;
       }
 
-      // Name + Class uniqueness per semester and school year check in the list
+      // Name + Class uniqueness per semester and school year check in the list (normalize spaces/case)
+      const cleanString = (val: string) => val.trim().toLowerCase().replace(/\s+/g, ' ');
       const duplicateNameInList = processedList.some(other =>
         other.id !== st.id &&
-        other.nama.trim().toLowerCase() === st.nama.trim().toLowerCase() &&
+        cleanString(other.nama) === cleanString(st.nama) &&
         other.kelas === st.kelas &&
         other.semester === st.semester &&
         other.tahunAjaran === st.tahunAjaran
@@ -612,13 +614,26 @@ export default function App() {
       }
     }
 
+    // Find only students that are new or have changed grades or info compared to previous state
+    const changedStudents = processedList.filter(st => {
+      const existing = students.find(s => s.id === st.id);
+      if (!existing) return true; // New student
+      return JSON.stringify(existing) !== JSON.stringify(st);
+    });
+
     setStudents(processedList);
     localStorage.setItem('raport_students', JSON.stringify(processedList));
     
     addSystemLog("Impor Masal Excel", `Melakukan impor data masal untuk ${processedList.length} santri`);
     
     try {
-      await dbService.saveStudentsBatch(processedList);
+      if (changedStudents.length > 0) {
+        const chunkSize = 400;
+        for (let i = 0; i < changedStudents.length; i += chunkSize) {
+          const chunk = changedStudents.slice(i, i + chunkSize);
+          await dbService.saveStudentsBatch(chunk);
+        }
+      }
     } catch (err) {
       console.error("Error bulk saving students to cloud:", err);
       alert("Gagal menyimpan beberapa data ke database cloud, tetapi data lokal berhasil diperbarui.");

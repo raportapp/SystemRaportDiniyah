@@ -122,11 +122,16 @@ const rawDbService = {
 
   async deleteStudentsBatch(ids: string[]): Promise<void> {
     try {
-      const promises = ids.map(async (id) => {
-        const docRef = doc(db, STUDENTS_COLL, id);
-        await deleteDoc(docRef);
-      });
-      await Promise.all(promises);
+      const chunkSize = 400;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        for (const id of chunk) {
+          const docRef = doc(db, STUDENTS_COLL, id);
+          batch.delete(docRef);
+        }
+        await batch.commit();
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, STUDENTS_COLL);
     }

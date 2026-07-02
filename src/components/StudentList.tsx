@@ -455,8 +455,8 @@ export default function StudentList({
           const kelas = rawKelas ? String(rawKelas).trim() : (selectedClassFilter !== 'ALL' ? selectedClassFilter : 'Sughro Awal Putra');
           const semester = (rawSemester && (String(rawSemester).trim() === 'Genap' || String(rawSemester).trim() === 'Ganjil')) 
             ? String(rawSemester).trim() as 'Ganjil' | 'Genap'
-            : 'Ganjil';
-          const tahunAjaran = rawTahunAjaran ? String(rawTahunAjaran).trim() : '2026/2027';
+            : activeSemester;
+          const tahunAjaran = rawTahunAjaran ? String(rawTahunAjaran).trim() : activeTahunAjaran;
           
           const sakit = isNaN(Number(rawSakit)) ? 0 : Number(rawSakit);
           const izin = isNaN(Number(rawIzin)) ? 0 : Number(rawIzin);
@@ -499,12 +499,19 @@ export default function StudentList({
             }
           });
 
-          // Match student within the same semester and school year to prevent overwriting other terms
-          const existingIdx = updatedList.findIndex(s => 
-            s.nis.trim().toLowerCase() === nis.toLowerCase() &&
-            s.semester === semester &&
-            s.tahunAjaran === tahunAjaran
-          );
+          const cleanString = (val: string) => val.trim().toLowerCase().replace(/\s+/g, ' ');
+          const cleanNis = (val: string) => val.trim().replace(/^0+/, '');
+
+          // Match student within the same semester and school year to prevent duplicates and overwriting other terms
+          const existingIdx = updatedList.findIndex(s => {
+            const sameSemesterAndYear = s.semester === semester && s.tahunAjaran === tahunAjaran;
+            if (!sameSemesterAndYear) return false;
+
+            const isSameNis = cleanNis(s.nis) === cleanNis(nis) && cleanNis(nis) !== '';
+            const isSameNameAndClass = cleanString(s.nama) === cleanString(nama) && s.kelas === kelas;
+
+            return isSameNis || isSameNameAndClass;
+          });
           if (existingIdx !== -1) {
             const existingStudent = updatedList[existingIdx];
             const updatedStudent: Student = {
