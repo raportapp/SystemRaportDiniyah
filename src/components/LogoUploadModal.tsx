@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Trash2, CheckCircle, ShieldCheck, X, ToggleLeft, ToggleRight, Loader } from 'lucide-react';
 import { UserAccount, SystemSettings } from '../types';
 import { compressBase64Image } from '../utils/imageCompressor';
-import defaultLogo from '../assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 
 interface LogoUploadModalProps {
   isOpen: boolean;

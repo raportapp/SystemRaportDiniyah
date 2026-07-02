@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, User, AlertCircle, RefreshCw } from 'lucide-react';
 import { UserAccount, SystemSettings } from '../types';
-import defaultLogo from '../assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 import LogoUploadModal from './LogoUploadModal';
 import { hashPassword } from '../utils/hash';
 

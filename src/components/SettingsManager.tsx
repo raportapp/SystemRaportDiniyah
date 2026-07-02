@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Settings, Image, Trash2, Check, AlertCircle, Download, Upload } from 'lucide-react';
 import { SystemSettings, Student, Subject, ClassSubject, ClassTeacher, UserAccount, SystemLog } from '../types';
 import { compressBase64Image } from '../utils/imageCompressor';
-import defaultLogo from '../assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 
 interface SettingsManagerProps {
   settings: SystemSettings;

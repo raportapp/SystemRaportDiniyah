@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Printer, ArrowLeft } from 'lucide-react';
 import { Student, Subject, SystemSettings, ClassTeacher, ClassSubject } from '../types';
 import { terbilangArab, terbilangIndo } from '../utils/terbilang';
-import defaultLogo from '../assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 
 interface RaportPrintProps {
   studentIds: string[]; // Supports multiple student IDs for mass print

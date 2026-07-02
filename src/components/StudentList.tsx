@@ -3,7 +3,7 @@ import { Search, Printer, Edit2, Trash2, FileText, Plus, UserCheck, ChevronDown,
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Student, ClassTeacher, Subject, UserAccount, ClassSubject, SystemSettings } from '../types';
-import defaultLogo from '../assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 
 interface StudentListProps {
   students: Student[];

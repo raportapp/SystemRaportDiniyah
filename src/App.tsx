@@ -13,7 +13,7 @@ import {
   INITIAL_SETTINGS, INITIAL_LOGS, INITIAL_USERS, INITIAL_CLASSES 
 } from './utils/initialData';
 import { dbService } from './lib/db';
-import defaultLogo from './assets/images/regenerated_image_1782476438450.png';
+const defaultLogo = "/logo.svg";
 import { auth } from './lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
 
