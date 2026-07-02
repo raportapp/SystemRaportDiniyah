@@ -519,25 +519,25 @@ export default function RaportPrint({
                         <tr className="border-b border-black">
                           <td className="p-1 border-r border-black font-semibold text-slate-800 text-left">1. Akhlaq</td>
                           <td className="p-1 border-r border-black text-center font-extrabold text-slate-900">{st.akhlaq || 'B'}</td>
-                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.akhlaq)}</td>
+                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.akhlaq || 'B')}</td>
                           <td className="p-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">اخلاق</td>
                         </tr>
                         <tr className="border-b border-black">
                           <td className="p-1 border-r border-black font-semibold text-slate-800 text-left">2. Kerajinan</td>
                           <td className="p-1 border-r border-black text-center font-extrabold text-slate-900">{st.kerajinan || 'B'}</td>
-                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerajinan)}</td>
+                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerajinan || 'B')}</td>
                           <td className="p-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">مجتهد</td>
                         </tr>
                         <tr className="border-b border-black">
                           <td className="p-1 border-r border-black font-semibold text-slate-800 text-left">3. Kedisiplinan</td>
                           <td className="p-1 border-r border-black text-center font-extrabold text-slate-900">{st.kedisiplinan || 'B'}</td>
-                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kedisiplinan)}</td>
+                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kedisiplinan || 'B')}</td>
                           <td className="p-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">تأديب</td>
                         </tr>
                         <tr>
                           <td className="p-1 border-r border-black font-semibold text-slate-800 text-left">4. Kerapihan</td>
                           <td className="p-1 border-r border-black text-center font-extrabold text-slate-900">{st.kerapihan || 'B'}</td>
-                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerapihan)}</td>
+                          <td className="p-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerapihan || 'B')}</td>
                           <td className="p-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">نظافة</td>
                         </tr>
                       </tbody>
