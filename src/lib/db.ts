@@ -67,6 +67,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export const isCloudSyncActive = (): boolean => {
   if (typeof window === 'undefined') return false;
+  const quotaExceeded = localStorage.getItem('raport_db_quota_exhausted') === 'true';
+  if (quotaExceeded) return false;
   const val = localStorage.getItem('raport_use_cloud_sync');
   return val === null ? true : val === 'true';
 };
@@ -425,25 +427,100 @@ const rawDbService = {
   }
 };
 
+function getLocalFallback(methodName: string): any {
+  if (typeof window === 'undefined') return [];
+  try {
+    if (methodName === 'getStudents') {
+      const v = localStorage.getItem('raport_students');
+      return v ? JSON.parse(v) : [];
+    }
+    if (methodName === 'getSubjects') {
+      const v = localStorage.getItem('raport_subjects');
+      return v ? JSON.parse(v) : [];
+    }
+    if (methodName === 'getClassSubjects') {
+      const v = localStorage.getItem('raport_class_subjects');
+      return v ? JSON.parse(v) : [];
+    }
+    if (methodName === 'getTeachers') {
+      const v = localStorage.getItem('raport_teachers');
+      return v ? JSON.parse(v) : [];
+    }
+    if (methodName === 'getSettings') {
+      const v = localStorage.getItem('raport_settings');
+      return v ? JSON.parse(v) : null;
+    }
+    if (methodName === 'getLogs') {
+      const v = localStorage.getItem('raport_logs');
+      return v ? JSON.parse(v) : [];
+    }
+    if (methodName === 'getUsers') {
+      const v = localStorage.getItem('raport_users');
+      return v ? JSON.parse(v) : [];
+    }
+  } catch (err) {
+    console.error("Gagal membaca data cadangan lokal:", err);
+  }
+  return methodName === 'getSettings' ? null : [];
+}
+
 export const dbService = new Proxy(rawDbService, {
   get(target, prop, receiver) {
     const originalMethod = Reflect.get(target, prop, receiver);
     if (typeof originalMethod === 'function') {
       return async function (...args: any[]) {
-        if (!isCloudSyncActive()) {
-          const methodName = String(prop);
+        const methodName = String(prop);
+        const cloudActive = isCloudSyncActive();
+        
+        // If cloud sync is not active, run completely in offline/local mode
+        if (!cloudActive) {
           if (methodName === 'isDatabaseEmpty') {
-            return true;
+            const st = localStorage.getItem('raport_students');
+            return !(st && JSON.parse(st).length > 0);
           }
           if (methodName.startsWith('get')) {
-            if (methodName === 'getSettings') {
-              return null;
-            }
-            return [];
+            return getLocalFallback(methodName);
           }
           return;
         }
-        return originalMethod.apply(target, args);
+
+        try {
+          return await originalMethod.apply(target, args);
+        } catch (error: any) {
+          const errMsg = error?.message || String(error);
+          const isQuota = errMsg.toLowerCase().includes('quota') || 
+                          errMsg.toLowerCase().includes('exhausted') || 
+                          errMsg.toLowerCase().includes('limit exceeded') ||
+                          errMsg.toLowerCase().includes('resource-exhausted') ||
+                          errMsg.toLowerCase().includes('backoff delay');
+          
+          if (isQuota) {
+            console.warn("Firestore Quota Limit detected! Falling back to localStorage dynamically.");
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('raport_db_quota_exhausted', 'true');
+              localStorage.setItem('raport_db_quota_error_msg', errMsg);
+            }
+            
+            // Return appropriate local fallbacks so the app doesn't freeze or block
+            if (methodName === 'isDatabaseEmpty') {
+              const st = localStorage.getItem('raport_students');
+              return !(st && JSON.parse(st).length > 0);
+            }
+            if (methodName.startsWith('get')) {
+              return getLocalFallback(methodName);
+            }
+            // Writes return void, so just return
+            return;
+          }
+          
+          // Rethrow other errors (e.g., authentication) so they can be handled normally,
+          // but if they are generic Firestore errors that prevent basic loading, we also do fallback
+          if (methodName.startsWith('get')) {
+            console.warn("Firestore error during get, fallback to local:", errMsg);
+            return getLocalFallback(methodName);
+          }
+          throw error;
+        }
       };
     }
     return originalMethod;

@@ -75,6 +75,9 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDashboardLogoModal, setShowDashboardLogoModal] = useState(false);
   const [firebaseAuthError, setFirebaseAuthError] = useState<string | null>(null);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && localStorage.getItem('raport_db_quota_exhausted') === 'true';
+  });
   const [useCloudSync, setUseCloudSync] = useState<boolean>(() => {
     const val = localStorage.getItem('raport_use_cloud_sync');
     if (val === null) {
@@ -83,6 +86,17 @@ export default function App() {
     }
     return val === 'true';
   });
+
+  // Periodic check for database quota exceeded status
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const exhausted = localStorage.getItem('raport_db_quota_exhausted') === 'true';
+      if (exhausted && !isQuotaExceeded) {
+        setIsQuotaExceeded(true);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isQuotaExceeded]);
 
   // Initialize and Seed Storage on Mount
   useEffect(() => {
@@ -100,7 +114,8 @@ export default function App() {
         }
         setUseCloudSync(isCloudSyncEnabled);
 
-        if (!isCloudSyncEnabled) {
+        const isQuotaExceededLocal = typeof window !== 'undefined' && localStorage.getItem('raport_db_quota_exhausted') === 'true';
+        if (!isCloudSyncEnabled || isQuotaExceededLocal) {
           // Bypassing Firebase! Load completely from Local Storage
           const storedStudents = localStorage.getItem('raport_students');
           if (storedStudents) setStudents(JSON.parse(storedStudents));
@@ -974,6 +989,8 @@ export default function App() {
     localStorage.setItem('raport_use_cloud_sync', enabled ? 'true' : 'false');
     setUseCloudSync(enabled);
     if (enabled) {
+      localStorage.removeItem('raport_db_quota_exhausted');
+      setIsQuotaExceeded(false);
       alert("Fitur Sinkronisasi Cloud diaktifkan! Aplikasi akan mencoba menghubungkan ke database cloud Firebase Anda saat menyegarkan halaman.");
     } else {
       alert("Mode Offline (Penyimpanan Lokal) diaktifkan! Semua data hanya disimpan di browser komputer ini tanpa koneksi ke Firebase.");
@@ -986,6 +1003,35 @@ export default function App() {
     localStorage.setItem('raport_logs', JSON.stringify([]));
     dbService.clearAllLogs().catch(err => console.error("Error clearing logs on cloud:", err));
     addSystemLog("Kosongkan Log", "Mengosongkan seluruh riwayat log aktivitas.");
+  };
+
+  const handleClearAllStudents = async () => {
+    if (confirm("PERINGATAN SANGAT PENTING:\n\nTindakan ini akan MENGHAPUS SELURUH data santri beserta semua nilai raport dan absensi yang ada di sistem ini!\n\nApakah Anda benar-benar yakin ingin mengosongkan semua data santri dan memulai dari awal?")) {
+      try {
+        setIsLoading(true);
+        // Clear local storage
+        localStorage.setItem('raport_students', JSON.stringify([]));
+        setStudents([]);
+        
+        // Try to clear from cloud too (if online and quota allows, otherwise it will just succeed locally due to our proxy fallback!)
+        const studentIds = students.map(s => s.id);
+        if (useCloudSync && studentIds.length > 0) {
+          try {
+            await dbService.deleteStudentsBatch(studentIds);
+          } catch (cloudErr) {
+            console.warn("Could not delete from cloud (possibly due to quota limit), but local data has been cleared:", cloudErr);
+          }
+        }
+        
+        addSystemLog("Hapus Semua Santri", "Menghapus seluruh data santri dan nilai raport untuk memulai penginputan ulang dari awal.");
+        alert("Alhamdulillah, seluruh data santri berhasil dikosongkan! Anda sekarang dapat mulai memasukkan data baru secara manual.");
+      } catch (err) {
+        console.error("Error clearing students:", err);
+        alert("Terjadi kesalahan saat mengosongkan data santri.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleRestoreData = async (backupData: any) => {
@@ -1665,6 +1711,49 @@ export default function App() {
         {/* 3. MAIN WORKSPACE */}
         <main className="flex-1 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 sm:p-8 relative min-h-[500px]">
           
+          {isQuotaExceeded && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm text-xs text-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="text-xl mt-0.5 shrink-0">⚠️</span>
+                <div className="space-y-1">
+                  <p className="font-extrabold text-amber-900 text-sm">Batas Kuota Database Cloud Terlampaui (Quota Limit Exceeded)</p>
+                  <p className="leading-relaxed text-slate-700 font-medium">
+                    Firebase Cloud Firestore Anda saat ini mencapai batas gratis harian. <strong>Sistem otomatis beralih ke Mode Offline (Penyimpanan Lokal)</strong> agar Anda tetap dapat melakukan input nilai, edit santri, dan mencetak raport secara normal tanpa ada gangguan.
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Data Anda tersimpan dengan aman di browser komputer ini dan dapat disinkronkan kembali setelah kuota direset oleh Firebase (biasanya esok hari) atau ditingkatkan.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem('raport_use_cloud_sync', 'false');
+                    setUseCloudSync(false);
+                    localStorage.removeItem('raport_db_quota_exhausted');
+                    setIsQuotaExceeded(false);
+                    alert("Sistem dialihkan sepenuhnya ke Mode Offline. Data tetap aman di browser Anda.");
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm transition active:scale-95 cursor-pointer text-[11px]"
+                >
+                  📴 Alihkan Ke Mode Offline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('raport_db_quota_exhausted');
+                    setIsQuotaExceeded(false);
+                  }}
+                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-200 transition active:scale-95 cursor-pointer text-[11px]"
+                >
+                  Tutup Peringatan
+                </button>
+              </div>
+            </div>
+          )}
+          
           {currentActiveTab === 'dashboard' && (
             <Dashboard
               students={students}
@@ -1775,6 +1864,7 @@ export default function App() {
               onAdvanceSemester={handleAdvanceSemester}
               useCloudSync={useCloudSync}
               onToggleCloudSync={handleToggleCloudSync}
+              onClearAllStudents={handleClearAllStudents}
             />
           )}
 

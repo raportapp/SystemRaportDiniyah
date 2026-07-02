@@ -18,6 +18,7 @@ interface SettingsManagerProps {
   onAdvanceSemester: (nextSettings: SystemSettings, enrollStudents: boolean) => Promise<void>;
   useCloudSync: boolean;
   onToggleCloudSync: (enabled: boolean) => void;
+  onClearAllStudents?: () => void;
 }
 
 export default function SettingsManager({
@@ -33,7 +34,8 @@ export default function SettingsManager({
   onToggleLock,
   onAdvanceSemester,
   useCloudSync,
-  onToggleCloudSync
+  onToggleCloudSync,
+  onClearAllStudents
 }: SettingsManagerProps) {
   const [namaPengasuh, setNamaPengasuh] = useState(settings.namaPengasuh);
   const [namaKepala, setNamaKepala] = useState(settings.namaKepala);
@@ -729,6 +731,38 @@ export default function SettingsManager({
           </div>
         </div>
       </div>
+
+      {/* SECTION 4: Pemeliharaan Sistem / Reset Data */}
+      {onClearAllStudents && (
+        <div className="bg-white rounded-xl border border-rose-100 shadow-sm p-6 space-y-6">
+          <h3 className="font-extrabold text-sm text-rose-800 uppercase tracking-wider pb-3 border-b flex items-center gap-2">
+            <span>⚠️</span> 4. Pemeliharaan Sistem & Pengosongan Data
+          </h3>
+
+          <div className="p-5 bg-rose-50/50 border border-rose-100 rounded-xl space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="space-y-1">
+                <h4 className="font-bold text-rose-950 text-sm">
+                  Kosongkan Seluruh Data Santri
+                </h4>
+                <p className="text-xs text-rose-800 max-w-2xl leading-relaxed">
+                  Jika Anda ingin menginput ulang semua data santri dari awal secara manual karena masalah data ganda atau alasan lainnya, Anda dapat mengosongkan seluruh data santri di dalam sistem ini. 
+                  <br />
+                  <strong className="text-rose-900 font-extrabold">Tindakan ini permanen dan akan menghapus semua santri beserta nilai raport dan absensinya!</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClearAllStudents}
+                className="px-5 py-2.5 bg-rose-700 hover:bg-rose-600 text-white rounded-lg text-xs font-extrabold shadow-sm transition active:scale-95 cursor-pointer flex-shrink-0"
+              >
+                🗑️ Hapus Seluruh Data Santri
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
