@@ -593,51 +593,45 @@ export default function RaportPrint({
                   {/* SIGNATURE GRID */}
                   <div className="mt-8 text-xs text-center font-sans">
                     {/* TOP ROW: Orang Tua/Wali, Wali Kelas, Kepala Madin */}
-                    <div className="grid grid-cols-3 gap-4 mb-8">
+                    <div className="grid grid-cols-3 gap-4 mb-8 items-start">
                       {/* Parent */}
-                      <div className="flex flex-col justify-between h-24">
-                        <p className="font-semibold">Orang Tua / Wali Santri</p>
-                        <div className="space-y-1">
-                          <div className="border-b border-black w-24 mx-auto" />
-                        </div>
+                      <div className="flex flex-col justify-between h-36">
+                        <p className="font-semibold text-center">Orang Tua / Wali Santri</p>
+                        <div className="h-20 flex items-center justify-center" />
+                        <div className="border-b border-black w-32 mx-auto" />
                       </div>
 
                       {/* Wali Kelas */}
-                      <div className="flex flex-col justify-between h-24">
-                        <p className="font-semibold">Wali Kelas</p>
-                        <div className="space-y-1">
-                          <p className="font-bold underline uppercase">{waliKelas}</p>
-                        </div>
+                      <div className="flex flex-col justify-between h-36">
+                        <p className="font-semibold text-center">Wali Kelas</p>
+                        <div className="h-20 flex items-center justify-center" />
+                        <p className="font-bold underline uppercase leading-tight text-center">{waliKelas}</p>
                       </div>
 
                       {/* Kepala Madin */}
-                      <div className="flex flex-col justify-between h-24">
-                        <p className="font-semibold">Kepala Madrasah Diniyah</p>
-                        <div className="space-y-1">
-                          {settings.ttdKepala ? (
-                            <img src={settings.ttdKepala} alt="TTD Kepala" className="h-10 max-w-[120px] object-contain mx-auto -mb-1" />
-                          ) : (
-                            <div className="h-4" />
+                      <div className="flex flex-col justify-between h-36">
+                        <p className="font-semibold text-center">Kepala Madrasah Diniyah</p>
+                        <div className="h-20 flex items-center justify-center">
+                          {settings.ttdKepala && (
+                            <img src={settings.ttdKepala} alt="TTD Kepala" className="h-16 max-w-[120px] object-contain mx-auto" />
                           )}
-                          <p className="font-bold underline uppercase">{settings.namaKepala}</p>
                         </div>
+                        <p className="font-bold underline uppercase leading-tight text-center">{settings.namaKepala}</p>
                       </div>
                     </div>
 
                     {/* BOTTOM ROW: Pengasuh (Centered) */}
-                    <div className="flex flex-col items-center justify-between h-24 mt-4">
+                    <div className="flex flex-col items-center justify-between h-36 mt-4">
                       <p className="font-semibold text-center">
                         Mengetahui,<br />
                         Pengasuh PPTQ Al-Husna BR
                       </p>
-                      <div className="space-y-1 text-center">
-                        {settings.ttdPengasuh ? (
-                          <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-10 max-w-[120px] object-contain mx-auto -mb-1" />
-                        ) : (
-                          <div className="h-4" />
+                      <div className="h-20 flex items-center justify-center">
+                        {settings.ttdPengasuh && (
+                          <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-16 max-w-[120px] object-contain mx-auto" />
                         )}
-                        <p className="font-bold underline uppercase">{settings.namaPengasuh}</p>
                       </div>
+                      <p className="font-bold underline uppercase leading-tight text-center">{settings.namaPengasuh}</p>
                     </div>
                   </div>
 
