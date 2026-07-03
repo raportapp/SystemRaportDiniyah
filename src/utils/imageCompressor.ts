@@ -90,27 +90,6 @@ export function compressBase64Image(
                 data[idx + 3] = Math.min(a, Math.round(a * ratio));
                 continue;
               }
-
-              // 2. Remove Dark/Black/Gray corners or borders
-              // If the pixel is near the outer boundary (corners of the square)
-              if (distToCenter > maxRadius * 0.8) {
-                // Check if it matches any corner color
-                const isCloseToCorner = cornerColors.some(([cr, cg, cb, ca]) => {
-                  if (ca < 10) return true; // corner is already transparent
-                  const colorDist = Math.sqrt((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2);
-                  return colorDist < 95; // generous tolerance for JPEG compression artifacts at corners
-                });
-
-                // Also check if it's near-black/dark gray/gray (since background borders are often dark/black)
-                const isDarkBorder = (r < 115 && g < 115 && b < 115);
-                
-                if (isCloseToCorner || isDarkBorder) {
-                  // Gradually fade out towards the edges
-                  const edgeFactor = (distToCenter - maxRadius * 0.8) / (maxRadius * 0.2);
-                  const opacity = Math.max(0, 1 - edgeFactor);
-                  data[idx + 3] = Math.min(data[idx + 3], Math.round(a * opacity));
-                }
-              }
             }
           }
           ctx.putImageData(imgData, 0, 0);
@@ -134,7 +113,7 @@ export async function compressSettingsImages(settings: any): Promise<any> {
   if (!settings) return settings;
   const compressed = { ...settings };
   if (compressed.logoSekolah) {
-    compressed.logoSekolah = await compressBase64Image(compressed.logoSekolah, 400, 400, 0.75, true);
+    compressed.logoSekolah = await compressBase64Image(compressed.logoSekolah, 400, 400, 0.75, false);
   }
   if (compressed.kopSurat) {
     // Kop surat is a wide banner, allow larger maxWidth (1200)

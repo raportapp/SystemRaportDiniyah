@@ -346,17 +346,19 @@ export default function RaportPrint({
                       </p>
                     </div>
 
-                    {/* Divider label */}
-                    <div className="text-center font-sans mb-1 mt-6">
-                      <p className="text-xs font-bold tracking-widest text-slate-500 uppercase">NAMA SANTRI</p>
-                    </div>
+                    {/* Student Identity Section */}
+                    <div className="w-full space-y-2 mt-6">
+                      <div className="text-center font-sans">
+                        <p className="text-xs font-bold tracking-widest text-slate-500 uppercase">NAMA SANTRI</p>
+                      </div>
 
-                    {/* Name Card Box */}
-                    <div className="w-full max-w-md mx-auto border-[1.5px] border-slate-900 rounded-3xl py-3 px-6 flex flex-col items-center justify-center font-sans bg-white shadow-sm">
-                      <div className="w-full border-t border-slate-300 my-1.5" />
-                      <h4 className="text-xl font-black text-slate-900 tracking-wide py-1">{st.nama}</h4>
-                      <div className="w-full border-t border-slate-300 my-1.5" />
-                      <p className="text-xs font-bold text-slate-800 py-1 font-mono">Nomor Induk: {st.nis}</p>
+                      {/* Name Card Box */}
+                      <div className="w-full max-w-md mx-auto border-[1.5px] border-slate-900 rounded-3xl py-3 px-6 flex flex-col items-center justify-center font-sans bg-white shadow-sm">
+                        <div className="w-full border-t border-slate-300 my-1.5" />
+                        <h4 className="text-xl font-black text-slate-900 tracking-wide py-1">{st.nama}</h4>
+                        <div className="w-full border-t border-slate-300 my-1.5" />
+                        <p className="text-xs font-bold text-slate-800 py-1 font-mono">Nomor Induk: {st.nis}</p>
+                      </div>
                     </div>
 
                   </div>
@@ -542,25 +544,25 @@ export default function RaportPrint({
                       </div>
 
                       {/* Bottom Right: Signatures */}
-                      <div className="flex gap-12 text-xs font-sans">
-                        <div className="flex flex-col justify-between h-28 items-center text-center w-36">
-                          <p className="font-semibold text-center">Kepala Madin</p>
+                      <div className="flex gap-8 text-[11px] font-sans">
+                        <div className="flex flex-col justify-between h-28 items-center text-center w-52 sm:w-60">
+                          <p className="font-semibold text-center whitespace-nowrap">Kepala Madin</p>
                           <div className="h-12 flex items-center justify-center">
                             {settings.ttdKepala && (
                               <img src={settings.ttdKepala} alt="TTD Kepala" className="h-10 object-contain" />
                             )}
                           </div>
-                          <p className="font-bold underline uppercase text-center">{settings.namaKepala}</p>
+                          <p className="font-bold underline uppercase text-center whitespace-nowrap text-[10.5px] tracking-tight">{settings.namaKepala}</p>
                         </div>
                         
-                        <div className="flex flex-col justify-between h-28 items-center text-center w-36">
-                          <p className="font-semibold text-center">Pengasuh PPTQ Al-Husna BR</p>
+                        <div className="flex flex-col justify-between h-28 items-center text-center w-52 sm:w-60">
+                          <p className="font-semibold text-center whitespace-nowrap">Pengasuh PPTQ Al-Husna BR</p>
                           <div className="h-12 flex items-center justify-center">
                             {settings.ttdPengasuh && (
                               <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-10 object-contain" />
                             )}
                           </div>
-                          <p className="font-bold underline uppercase text-center">{settings.namaPengasuh}</p>
+                          <p className="font-bold underline uppercase text-center whitespace-nowrap text-[10.5px] tracking-tight">{settings.namaPengasuh}</p>
                         </div>
                       </div>
                     </div>
