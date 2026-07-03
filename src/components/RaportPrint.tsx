@@ -4,6 +4,25 @@ import { Student, Subject, SystemSettings, ClassTeacher, ClassSubject } from '..
 import { terbilangArab, terbilangIndo } from '../utils/terbilang';
 const defaultLogo = "/logo.svg";
 
+const formatIndoDate = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const year = parts[0];
+  const monthIndex = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10).toString();
+  
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  
+  if (monthIndex >= 0 && monthIndex < 12) {
+    return `${day} ${months[monthIndex]} ${year}`;
+  }
+  return dateStr;
+};
+
 interface RaportPrintProps {
   studentIds: string[]; // Supports multiple student IDs for mass print
   students: Student[];
@@ -23,7 +42,7 @@ export default function RaportPrint({
   settings,
   onBack
 }: RaportPrintProps) {
-  const [printMode, setPrintMode] = useState<'both' | 'cover' | 'grades'>('both');
+  const [printMode, setPrintMode] = useState<'all' | 'cover' | 'biodata' | 'grades'>('all');
   const [showRanking, setShowRanking] = useState<boolean>(true);
   const [manualWriteRank, setManualWriteRank] = useState<boolean>(false);
 
@@ -84,6 +103,19 @@ export default function RaportPrint({
             padding: 0 !important;
             border: none !important;
           }
+          .page-break-biodata {
+            page-break-after: always;
+            break-after: page;
+            min-height: 275mm !important;
+            height: 275mm !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+          }
           .page-break-grade {
             page-break-after: always;
             break-after: page;
@@ -120,16 +152,16 @@ export default function RaportPrint({
         </div>
 
         {/* Print Option Selector */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start md:self-auto border border-slate-200">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl self-start md:self-auto border border-slate-200">
           <button
-            onClick={() => setPrintMode('both')}
+            onClick={() => setPrintMode('all')}
             className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-              printMode === 'both'
+              printMode === 'all'
                 ? 'bg-emerald-800 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Cover & Nilai
+            Lengkap (Sampul, Biodata, & Nilai)
           </button>
           <button
             onClick={() => setPrintMode('cover')}
@@ -140,6 +172,16 @@ export default function RaportPrint({
             }`}
           >
             Hanya Sampul/Cover
+          </button>
+          <button
+            onClick={() => setPrintMode('biodata')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+              printMode === 'biodata'
+                ? 'bg-emerald-800 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Hanya Biodata
           </button>
           <button
             onClick={() => setPrintMode('grades')}
@@ -272,79 +314,263 @@ export default function RaportPrint({
             <div key={st.id} className="space-y-12 print:space-y-0">
               
               {/* 1. COVER PAGE (SAMPUL) */}
-              {(printMode === 'both' || printMode === 'cover') && (
+              {(printMode === 'all' || printMode === 'cover') && (
                 <div 
-                  className="bg-white rounded-xl shadow-xl border border-slate-200 p-12 sm:p-20 font-serif text-black flex flex-col justify-between relative print:shadow-none print:border-none print:p-0 print:rounded-none page-break-cover"
+                  className="bg-white rounded-xl shadow-xl border border-slate-200 p-12 sm:p-16 font-sans text-black flex flex-col justify-between relative print:shadow-none print:border-none print:p-0 print:rounded-none page-break-cover"
                   style={{ minHeight: '297mm' }}
                 >
-                  {/* Decorative Frame */}
-                  <div className="absolute inset-4 border-4 border-double border-emerald-900 pointer-events-none p-1">
-                    <div className="border border-emerald-800 h-full w-full" />
+                  <div className="flex flex-col items-center justify-between h-full py-6 text-center relative z-10">
+                    
+                    {/* Top Section: Header Title */}
+                    <div className="text-center font-sans">
+                      <p className="text-lg font-bold tracking-widest mb-1.5 text-slate-800">BUKU</p>
+                      <p className="text-xl font-extrabold tracking-wide mb-1.5 text-slate-900 leading-snug">LAPORAN HASIL BELAJAR SANTRI</p>
+                      <p className="text-xl font-extrabold tracking-wide text-slate-900">MADRASAH DINIYAH</p>
+                    </div>
+
+                    {/* Middle Section: Logo */}
+                    <div className="my-6 flex justify-center">
+                      <img src={settings.logoSekolah || defaultLogo} alt="Logo" className="h-44 w-44 object-contain" />
+                    </div>
+
+                    {/* Middle Section: Institution Info */}
+                    <div className="text-center font-sans space-y-1.5 text-xs font-bold text-slate-900 leading-relaxed">
+                      <p className="text-sm font-extrabold">PPTQ AL-HUSNA BUKIT RAJA WALI</p>
+                      <p className="text-xs">MADRASAH DINIYAH</p>
+                      <p className="text-xs">NSPP - 510018100040</p>
+                      <p className="text-[11px] font-semibold text-slate-700 max-w-lg mx-auto leading-relaxed">
+                        Jl. Lkr. Utara RT.05 RW.02, Podomoro, Pringsewu, Pringsewu, Lampung, 35373
+                      </p>
+                      <p className="text-[11px] font-semibold text-slate-700">
+                        Telp. 081586873919, Alhusnabukitrajawali@gmail.com, pptqalhusna.sch.id
+                      </p>
+                    </div>
+
+                    {/* Divider label */}
+                    <div className="text-center font-sans mb-1 mt-6">
+                      <p className="text-xs font-bold tracking-widest text-slate-500 uppercase">NAMA SANTRI</p>
+                    </div>
+
+                    {/* Name Card Box */}
+                    <div className="w-full max-w-md mx-auto border-[1.5px] border-slate-900 rounded-3xl py-3 px-6 flex flex-col items-center justify-center font-sans bg-white shadow-sm">
+                      <div className="w-full border-t border-slate-300 my-1.5" />
+                      <h4 className="text-xl font-black text-slate-900 tracking-wide py-1">{st.nama}</h4>
+                      <div className="w-full border-t border-slate-300 my-1.5" />
+                      <p className="text-xs font-bold text-slate-800 py-1 font-mono">Nomor Induk: {st.nis}</p>
+                    </div>
+
                   </div>
+                </div>
+              )}
 
-                  <div className="flex flex-col items-center justify-between h-full py-8 text-center relative z-10">
-                    {/* Top Section: Logo & Madrasah Name */}
-                    <div className="space-y-4">
-                      <div className="h-28 w-28 rounded-full bg-white flex items-center justify-center p-2 mx-auto shadow-md border border-slate-100">
-                        <img src={settings.logoSekolah || defaultLogo} alt="Logo" className="h-full w-full object-contain" />
-                      </div>
-
-                      <div className="space-y-1">
-                        <h2 className="text-sm font-bold tracking-widest text-slate-500 uppercase">LAPORAN HASIL BELAJAR</h2>
-                        <h1 className="text-2xl font-black text-emerald-950 uppercase tracking-tight">MADRASAH DINIYAH AL-HUSNA</h1>
-                        <p className="text-xs font-bold text-amber-700 tracking-wider uppercase">PPTQ AL-HUSNA BUKIT RAJA WALI</p>
-                      </div>
+              {/* 1b. BIODATA PAGE */}
+              {(printMode === 'all' || printMode === 'biodata') && (
+                <div 
+                  className="bg-white rounded-xl shadow-xl border border-slate-200 p-12 font-sans text-black flex flex-col justify-between relative print:shadow-none print:border-none print:p-0 print:rounded-none page-break-biodata"
+                  style={{ minHeight: '297mm' }}
+                >
+                  <div className="flex flex-col justify-between h-full py-4 relative z-10">
+                    
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                      <h2 className="text-lg font-extrabold tracking-wide uppercase text-slate-900">KETERANGAN TENTANG DIRI SANTRI</h2>
                     </div>
 
-                    {/* Middle Section: Cover Title */}
-                    <div className="my-10 space-y-3">
-                      <span className="text-amber-600 text-lg">❆ ❆ ❆</span>
-                      <h3 className="text-3xl font-black tracking-widest text-emerald-900">R A P O R T</h3>
-                      <p className="text-xs font-bold text-slate-500 tracking-widest uppercase">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
-                      <span className="text-amber-600 text-lg">❆ ❆ ❆</span>
-                    </div>
-
-                    {/* Middle Section: Student Information Box */}
-                    <div className="w-full max-w-md border-2 border-emerald-900/60 rounded-2xl p-6 bg-emerald-50/10 space-y-4 text-left mx-auto">
-                      <table className="w-full text-sm font-medium">
+                    {/* Table of Biodata */}
+                    <div className="w-full text-[13px] font-sans px-4 leading-relaxed flex-grow">
+                      <table className="w-full border-collapse">
                         <tbody>
-                          <tr className="border-b border-emerald-900/10">
-                            <td className="py-2.5 text-slate-500 font-bold w-36 uppercase text-xs">NAMA SANTRI</td>
-                            <td className="py-2.5 font-black text-emerald-950 uppercase">: {st.nama}</td>
+                          {/* 1 */}
+                          <tr>
+                            <td className="py-1.5 w-6 align-top font-semibold">1.</td>
+                            <td className="py-1.5 w-56 align-top">Nama Santri (Lengkap)</td>
+                            <td className="py-1.5 w-3 align-top">:</td>
+                            <td className="py-1.5 align-top font-bold text-slate-900 uppercase">{st.nama}</td>
                           </tr>
-                          <tr className="border-b border-emerald-900/10">
-                            <td className="py-2.5 text-slate-500 font-bold uppercase text-xs">NIS / NO. INDUK</td>
-                            <td className="py-2.5 font-bold text-slate-800">: {st.nis}</td>
+                          {/* 2 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">2.</td>
+                            <td className="py-1.5 align-top">Nomor Induk Santri</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top font-semibold text-slate-800">{st.nis}</td>
                           </tr>
-                          <tr className="border-b border-emerald-900/10">
-                            <td className="py-2.5 text-slate-500 font-bold uppercase text-xs">JENJANG KELAS</td>
-                            <td className="py-2.5 font-bold text-slate-800">: {st.kelas}</td>
+                          {/* 3 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">3.</td>
+                            <td className="py-1.5 align-top">Jenis Kelamin</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">{st.gender === 'L' ? 'Laki-laki' : st.gender === 'P' ? 'Perempuan' : '-'}</td>
                           </tr>
-                          <tr className="border-b border-emerald-900/10">
-                            <td className="py-2.5 text-slate-500 font-bold uppercase text-xs">SEMESTER</td>
-                            <td className="py-2.5 font-bold text-slate-800">: {st.semester}</td>
+                          {/* 4 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">4.</td>
+                            <td className="py-1.5 align-top">Tempat & Tanggal Lahir</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">
+                              {st.tempatLahir ? `${st.tempatLahir}, ` : ''}{formatIndoDate(st.tanggalLahir)}
+                            </td>
+                          </tr>
+                          {/* 5 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">5.</td>
+                            <td className="py-1.5 align-top">Agama</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">Islam</td>
+                          </tr>
+                          {/* 6 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">6.</td>
+                            <td className="py-1.5 align-top">Status dalam Keluarga</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">Anak Kandung</td>
+                          </tr>
+                          {/* 7 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">7.</td>
+                            <td className="py-1.5 align-top">Anak Ke-</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">-</td>
+                          </tr>
+                          {/* 8 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">8.</td>
+                            <td className="py-1.5 align-top">Alamat Santri</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">{st.alamat || '-'}</td>
+                          </tr>
+                          
+                          {/* 9 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">9.</td>
+                            <td className="py-1.5 align-top" colSpan={3}>Diterima</td>
                           </tr>
                           <tr>
-                            <td className="py-2.5 text-slate-500 font-bold uppercase text-xs">TAHUN PELAJARAN</td>
-                            <td className="py-2.5 font-bold text-slate-800">: {st.tahunAjaran}</td>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">a. Di Kelas</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">{st.kelas || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">b. Pada Tanggal</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">{formatIndoDate(st.tanggalMasuk)}</td>
+                          </tr>
+
+                          {/* 10 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">10.</td>
+                            <td className="py-1.5 align-top" colSpan={3}>Madrasah/Sekolah Asal</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">a. Nama Madrasah/Sekolah</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">-</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">b. Alamat</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">-</td>
+                          </tr>
+
+                          {/* 11 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">11.</td>
+                            <td className="py-1.5 align-top" colSpan={3}>Nama Orang Tua</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">a. Ayah</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800 font-semibold">{st.namaAyah || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">b. Ibu</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800 font-semibold">{st.namaIbu || '-'}</td>
+                          </tr>
+
+                          {/* Alamat Orang Tua */}
+                          <tr>
+                            <td className="py-1.5 align-top"></td>
+                            <td className="py-1.5 pl-6 align-top">Alamat Orang Tua</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">{st.alamat || '-'}</td>
+                          </tr>
+
+                          {/* 12 */}
+                          <tr>
+                            <td className="py-1.5 align-top font-semibold">12.</td>
+                            <td className="py-1.5 align-top" colSpan={3}>Pekerjaan Orang Tua</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">a. Ayah</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">-</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 align-top"></td>
+                            <td className="py-1 pl-6 align-top">b. Ibu</td>
+                            <td className="py-1 align-top">:</td>
+                            <td className="py-1 align-top text-slate-800">-</td>
+                          </tr>
+
+                          {/* No. Handphone */}
+                          <tr>
+                            <td className="py-1.5 align-top"></td>
+                            <td className="py-1.5 pl-6 align-top">No. Handphone</td>
+                            <td className="py-1.5 align-top">:</td>
+                            <td className="py-1.5 align-top text-slate-800">{st.noHpOrangTua || '-'}</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
 
-                    {/* Bottom Section: Address Info */}
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-800 uppercase">YAYASAN PONDOK PESANTREN TAHFIDZUL QUR'AN AL-HUSNA</p>
-                      <p className="text-[10px] text-slate-500 max-w-md mx-auto">
-                        Komplek Pesantren Al-Husna, Bukit Raja Wali, Lampung, Indonesia
-                      </p>
+                    {/* Bottom Area: Pas Foto and Signatures */}
+                    <div className="flex justify-between items-end mt-10 px-4 print-avoid-break">
+                      {/* Bottom Left: Pas Foto Box */}
+                      <div className="w-24 h-32 border border-slate-400 bg-slate-50 flex items-center justify-center text-[10px] text-slate-400 relative">
+                        {st.foto ? (
+                          <img src={st.foto} alt="Foto Santri" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-center font-sans font-semibold">PAS FOTO<br />3 x 4</span>
+                        )}
+                      </div>
+
+                      {/* Bottom Right: Signatures */}
+                      <div className="flex gap-12 text-xs font-sans">
+                        <div className="flex flex-col justify-between h-28 items-center text-center w-36">
+                          <p className="font-semibold text-center">Kepala Madin</p>
+                          <div className="h-12 flex items-center justify-center">
+                            {settings.ttdKepala && (
+                              <img src={settings.ttdKepala} alt="TTD Kepala" className="h-10 object-contain" />
+                            )}
+                          </div>
+                          <p className="font-bold underline uppercase text-center">{settings.namaKepala}</p>
+                        </div>
+                        
+                        <div className="flex flex-col justify-between h-28 items-center text-center w-36">
+                          <p className="font-semibold text-center">Pengasuh PPTQ Al-Husna BR</p>
+                          <div className="h-12 flex items-center justify-center">
+                            {settings.ttdPengasuh && (
+                              <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-10 object-contain" />
+                            )}
+                          </div>
+                          <p className="font-bold underline uppercase text-center">{settings.namaPengasuh}</p>
+                        </div>
+                      </div>
                     </div>
+
                   </div>
                 </div>
               )}
               
               {/* 2. GRADE PAGE (NILAI) */}
-              {(printMode === 'both' || printMode === 'grades') && (
+              {(printMode === 'all' || printMode === 'grades') && (
                 <div 
                   className="bg-white rounded-xl shadow-xl border border-slate-200 p-8 sm:p-12 font-serif text-black leading-normal print:shadow-none print:border-none print:p-0 print:rounded-none page-break-grade"
                   style={{ minHeight: '297mm' }} // Standard A4 height approximation
