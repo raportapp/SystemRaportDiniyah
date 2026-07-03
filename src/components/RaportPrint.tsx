@@ -230,6 +230,23 @@ export default function RaportPrint({
             ? (totalScore / totalSubjectCount).toFixed(2) 
             : "0";
 
+          const isCompact = totalSubjectCount > 7;
+          const isUltraCompact = totalSubjectCount > 10;
+          const cellCls = isUltraCompact 
+            ? "p-1 print:py-[1px] print:px-0.5" 
+            : isCompact 
+              ? "p-1 print:py-0.5 print:px-1" 
+              : "p-1 print:py-0.5 print:px-1";
+          const footerCellCls = isUltraCompact 
+            ? "p-1.5 print:py-[1px] print:px-0.5" 
+            : isCompact 
+              ? "p-1.5 print:py-0.5 print:px-1" 
+              : "p-1.5 print:py-0.5 print:px-1";
+
+          const sigHeightCls = isUltraCompact ? "print:h-20" : isCompact ? "print:h-24" : "print:h-28";
+          const sigSpacerCls = isUltraCompact ? "print:h-10" : isCompact ? "print:h-12" : "print:h-16";
+          const sigImgHeightCls = isUltraCompact ? "h-8 print:h-8" : isCompact ? "h-10 print:h-10" : "h-12 print:h-12";
+
           // Calculate class ranking for this student using the classActiveSubjects
           const classStudents = students.filter(s => s.kelas === st.kelas);
           const studentAvgs = classStudents.map(s => {
@@ -336,7 +353,7 @@ export default function RaportPrint({
                   {/* KOP SURAT HEADER */}
                   <div className="text-center space-y-2">
                     {settings.kopSurat ? (
-                      <div className="w-full mb-3">
+                      <div className={`w-full ${isUltraCompact ? 'mb-1 print:mb-0.5' : 'mb-3'}`}>
                         <img src={settings.kopSurat} alt="Kop Surat" className="w-full h-auto object-contain" />
                       </div>
                     ) : (
@@ -352,74 +369,74 @@ export default function RaportPrint({
                     )}
                     
                     {/* Traditional Double Line Divider */}
-                    <div className="border-b-[3px] border-double border-black w-full my-2" />
+                    <div className={`border-b-[3px] border-double border-black w-full ${isUltraCompact ? 'my-1 print:my-0.5' : 'my-2'}`} />
                   </div>
 
                   {/* RAPORT TITLE */}
-                  <div className="text-center my-2 print:my-0.5">
+                  <div className={`text-center ${isUltraCompact ? 'my-1 print:my-0' : 'my-2 print:my-0.5'}`}>
                     <h2 className="text-base font-bold underline decoration-double tracking-wide print:text-xs">
                       LAPORAN HASIL BELAJAR SANTRI / تقرير نتائج الدراسة
                     </h2>
                   </div>
 
                   {/* STUDENT BIODATA GRID */}
-                  <div className="grid grid-cols-2 gap-4 print:gap-2 text-xs print:text-[10px] font-sans my-3 print:my-1 border border-slate-100 p-3 print:p-0 rounded-lg bg-slate-50/50 print:bg-white print:border-none">
+                  <div className={`grid grid-cols-2 gap-4 print:gap-2 ${isUltraCompact ? 'text-xs print:text-[8.5px] my-1 print:my-0.5' : isCompact ? 'text-xs print:text-[9px] my-2 print:my-1' : 'text-xs print:text-[10px] my-3 print:my-1'} font-sans border border-slate-100 p-3 print:p-0 rounded-lg bg-slate-50/50 print:bg-white print:border-none`}>
                     <table className="w-full">
                       <tbody>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500 w-28">Nama Santri</td>
-                          <td className="py-1 print:py-0.5 font-extrabold text-slate-950 uppercase">: {st.nama}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500 w-28`}>Nama Santri</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-extrabold text-slate-950 uppercase`}>: {st.nama}</td>
                         </tr>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500">NIS / رقم القid</td>
-                          <td className="py-1 print:py-0.5 font-semibold text-slate-800">: {st.nis}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>NIS / رقم القid</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {st.nis}</td>
                         </tr>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500">Tahun Ajaran</td>
-                          <td className="py-1 print:py-0.5 font-semibold text-slate-800">: {st.tahunAjaran}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>Tahun Ajaran</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {st.tahunAjaran}</td>
                         </tr>
                       </tbody>
                     </table>
                     <table className="w-full">
                       <tbody>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500 w-28">Jenjang Kelas</td>
-                          <td className="py-1 print:py-0.5 font-semibold text-slate-800">: {st.kelas}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500 w-28`}>Jenjang Kelas</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {st.kelas}</td>
                         </tr>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500">Semester</td>
-                          <td className="py-1 print:py-0.5 font-semibold text-slate-800">: {st.semester} / {st.semester === 'Ganjil' ? 'الفصل الأول' : 'الفصل الثاني'}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>Semester</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {st.semester} / {st.semester === 'Ganjil' ? 'الفصل الأول' : 'الفصل الثاني'}</td>
                         </tr>
                         <tr>
-                          <td className="py-1 print:py-0.5 font-bold text-slate-500">Wali Kelas</td>
-                          <td className="py-1 print:py-0.5 font-semibold text-slate-800">: {waliKelas}</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>Wali Kelas</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {waliKelas}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
                   {/* GRADES TABLE */}
-                  <div className="overflow-x-auto my-3 print:my-1">
-                    <table className="w-full text-[11px] print:text-[9.5px] border border-black border-collapse text-center">
+                  <div className={`overflow-x-auto ${isUltraCompact ? 'my-1.5 print:my-0.5' : isCompact ? 'my-2 print:my-1' : 'my-3 print:my-1'}`}>
+                    <table className={`w-full text-[11px] ${isUltraCompact ? 'print:text-[8px]' : isCompact ? 'print:text-[9px]' : 'print:text-[9.5px]'} border border-black border-collapse text-center`}>
                       <thead>
                         <tr className="bg-slate-50 border border-black">
                           {/* LEFT HALF HEADER */}
-                          <th className="border-r border-black p-1 print:p-0.5 w-6 font-bold" colSpan={1} rowSpan={2}>No</th>
-                          <th className="border-r border-black p-1 print:p-0.5 text-left w-48 font-bold" rowSpan={2}>Mata Pelajaran</th>
-                          <th className="border-r border-black p-1 print:p-0.5 font-bold w-48" colSpan={2}>Hasil Tes / الدرجات العقلية</th>
+                          <th className={`border-r border-black ${cellCls} w-6 font-bold`} colSpan={1} rowSpan={2}>No</th>
+                          <th className={`border-r border-black ${cellCls} text-left w-48 font-bold`} rowSpan={2}>Mata Pelajaran</th>
+                          <th className={`border-r border-black ${cellCls} font-bold w-48`} colSpan={2}>Hasil Tes / الدرجات العقلية</th>
                           
                           {/* RIGHT HALF HEADER */}
-                          <th className="border-r border-black p-1 print:p-0.5 font-bold w-48" colSpan={2}>الدرجات العقلية</th>
-                          <th className="border-r border-black p-1 print:p-0.5 text-right w-48 font-serif font-bold" rowSpan={2}>المواد الدراسية</th>
-                          <th className="p-1 print:p-0.5 w-6 font-serif font-bold" rowSpan={2}>رقم</th>
+                          <th className={`border-r border-black ${cellCls} font-bold w-48`} colSpan={2}>الدرجات العقلية</th>
+                          <th className={`border-r border-black ${cellCls} text-right w-48 font-serif font-bold`} rowSpan={2}>المواد الدراasiah</th>
+                          <th className={`${cellCls} w-6 font-serif font-bold`} rowSpan={2}>رقم</th>
                         </tr>
                         <tr className="bg-slate-50 border border-black">
                           {/* Left subheaders */}
-                          <th className="border-r border-black p-0.5 print:py-0 print:px-0.5 w-10 font-bold">Angka</th>
-                          <th className="border-r border-black p-0.5 print:py-0 print:px-0.5 w-36 font-bold text-left">Huruf</th>
+                          <th className={`border-r border-black ${cellCls} w-10 font-bold`}>Angka</th>
+                          <th className={`border-r border-black ${cellCls} w-36 font-bold text-left`}>Huruf</th>
                           {/* Right subheaders */}
-                          <th className="border-r border-black p-0.5 print:py-0 print:px-0.5 w-36 font-serif font-bold text-right">كتابة</th>
-                          <th className="border-r border-black p-0.5 print:py-0 print:px-0.5 w-10 font-serif font-bold">رقما</th>
+                          <th className={`border-r border-black ${cellCls} w-36 font-serif font-bold text-right`}>كتابة</th>
+                          <th className={`border-r border-black ${cellCls} w-10 font-serif font-bold`}>رقما</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -427,21 +444,21 @@ export default function RaportPrint({
                         {gradesCatA.length > 0 && (
                           <>
                             <tr className="bg-slate-100/60 font-bold border-b border-black text-left">
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-center font-extrabold text-slate-800">A</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold" colSpan={3}>Tertulis</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-extrabold" colSpan={3}>التحريرية</td>
-                              <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-extrabold">أ</td>
+                              <td className={`${cellCls} border-r border-black text-center font-extrabold text-slate-800`}>A</td>
+                              <td className={`${cellCls} border-r border-black font-extrabold`} colSpan={3}>Tertulis</td>
+                              <td className={`${cellCls} border-r border-black text-right font-serif font-extrabold`} colSpan={3}>التحريرية</td>
+                              <td className={`${cellCls} text-center font-serif font-extrabold`}>أ</td>
                             </tr>
                             {gradesCatA.map(g => (
                               <tr key={`A-${g.no}`} className="border-b border-black hover:bg-slate-50/20">
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-500 text-center">{g.no}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left font-bold text-slate-800">{g.nameId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold text-slate-900 text-center">{g.score}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left text-slate-500 font-medium italic">{g.spelledId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif text-emerald-950 font-bold" dir="rtl">{g.spelledAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 font-bold text-center">{toArabicDigits(g.score)}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-bold text-emerald-950" dir="rtl">{g.nameAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 font-serif text-slate-500 font-bold text-center">{toArabicDigits(g.no)}</td>
+                                <td className={`${cellCls} border-r border-black font-semibold text-slate-500 text-center`}>{g.no}</td>
+                                <td className={`${cellCls} border-r border-black text-left font-bold text-slate-800`}>{g.nameId}</td>
+                                <td className={`${cellCls} border-r border-black font-extrabold text-slate-900 text-center`}>{g.score}</td>
+                                <td className={`${cellCls} border-r border-black text-left text-slate-500 font-medium italic`}>{g.spelledId}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif text-emerald-950 font-bold`} dir="rtl">{g.spelledAr}</td>
+                                <td className={`${cellCls} border-r border-black font-serif text-emerald-950 font-bold text-center`}>{toArabicDigits(g.score)}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif font-bold text-emerald-950`} dir="rtl">{g.nameAr}</td>
+                                <td className={`${cellCls} font-serif text-slate-500 font-bold text-center`}>{toArabicDigits(g.no)}</td>
                               </tr>
                             ))}
                           </>
@@ -451,21 +468,21 @@ export default function RaportPrint({
                         {gradesCatB.length > 0 && (
                           <>
                             <tr className="bg-slate-100/60 font-bold border-b border-black text-left">
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-center font-extrabold text-slate-800">B</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold" colSpan={3}>Hafalan / Membaca</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-extrabold" colSpan={3}>الحفظ والقراءة</td>
-                              <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-extrabold">ب</td>
+                              <td className={`${cellCls} border-r border-black text-center font-extrabold text-slate-800`}>B</td>
+                              <td className={`${cellCls} border-r border-black font-extrabold`} colSpan={3}>Hafalan / Membaca</td>
+                              <td className={`${cellCls} border-r border-black text-right font-serif font-extrabold`} colSpan={3}>الحفظ والقراءة</td>
+                              <td className={`${cellCls} text-center font-serif font-extrabold`}>ب</td>
                             </tr>
                             {gradesCatB.map(g => (
                               <tr key={`B-${g.no}`} className="border-b border-black hover:bg-slate-50/20">
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-500 text-center">{g.no}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left font-bold text-slate-800">{g.nameId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold text-slate-900 text-center">{g.score}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left text-slate-500 font-medium italic">{g.spelledId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif text-emerald-950 font-bold" dir="rtl">{g.spelledAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 font-bold text-center">{toArabicDigits(g.score)}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-bold text-emerald-950" dir="rtl">{g.nameAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 font-serif text-slate-500 font-bold text-center">{toArabicDigits(g.no)}</td>
+                                <td className={`${cellCls} border-r border-black font-semibold text-slate-500 text-center`}>{g.no}</td>
+                                <td className={`${cellCls} border-r border-black text-left font-bold text-slate-800`}>{g.nameId}</td>
+                                <td className={`${cellCls} border-r border-black font-extrabold text-slate-900 text-center`}>{g.score}</td>
+                                <td className={`${cellCls} border-r border-black text-left text-slate-500 font-medium italic`}>{g.spelledId}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif text-emerald-950 font-bold`} dir="rtl">{g.spelledAr}</td>
+                                <td className={`${cellCls} border-r border-black font-serif text-emerald-950 font-bold text-center`}>{toArabicDigits(g.score)}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif font-bold text-emerald-950`} dir="rtl">{g.nameAr}</td>
+                                <td className={`${cellCls} font-serif text-slate-500 font-bold text-center`}>{toArabicDigits(g.no)}</td>
                               </tr>
                             ))}
                           </>
@@ -475,21 +492,21 @@ export default function RaportPrint({
                         {gradesCatC.length > 0 && (
                           <>
                             <tr className="bg-slate-100/60 font-bold border-b border-black text-left">
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-center font-extrabold text-slate-800">C</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold" colSpan={3}>Menulis</td>
-                              <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-extrabold" colSpan={3}>الكتابة</td>
-                              <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-extrabold">ج</td>
+                              <td className={`${cellCls} border-r border-black text-center font-extrabold text-slate-800`}>C</td>
+                              <td className={`${cellCls} border-r border-black font-extrabold`} colSpan={3}>Menulis</td>
+                              <td className={`${cellCls} border-r border-black text-right font-serif font-extrabold`} colSpan={3}>الكتابة</td>
+                              <td className={`${cellCls} text-center font-serif font-extrabold`}>ج</td>
                             </tr>
                             {gradesCatC.map(g => (
                               <tr key={`C-${g.no}`} className="border-b border-black hover:bg-slate-50/20">
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-500 text-center">{g.no}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left font-bold text-slate-800">{g.nameId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-extrabold text-slate-900 text-center">{g.score}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-left text-slate-500 font-medium italic">{g.spelledId}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif text-emerald-950 font-bold" dir="rtl">{g.spelledAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 font-bold text-center">{toArabicDigits(g.score)}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-right font-serif font-bold text-emerald-950" dir="rtl">{g.nameAr}</td>
-                                <td className="p-1 print:py-0.5 print:px-1 font-serif text-slate-500 font-bold text-center">{toArabicDigits(g.no)}</td>
+                                <td className={`${cellCls} border-r border-black font-semibold text-slate-500 text-center`}>{g.no}</td>
+                                <td className={`${cellCls} border-r border-black text-left font-bold text-slate-800`}>{g.nameId}</td>
+                                <td className={`${cellCls} border-r border-black font-extrabold text-slate-900 text-center`}>{g.score}</td>
+                                <td className={`${cellCls} border-r border-black text-left text-slate-500 font-medium italic`}>{g.spelledId}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif text-emerald-950 font-bold`} dir="rtl">{g.spelledAr}</td>
+                                <td className={`${cellCls} border-r border-black font-serif text-emerald-950 font-bold text-center`}>{toArabicDigits(g.score)}</td>
+                                <td className={`${cellCls} border-r border-black text-right font-serif font-bold text-emerald-950`} dir="rtl">{g.nameAr}</td>
+                                <td className={`${cellCls} font-serif text-slate-500 font-bold text-center`}>{toArabicDigits(g.no)}</td>
                               </tr>
                             ))}
                           </>
@@ -497,25 +514,25 @@ export default function RaportPrint({
 
                         {/* FOOTER ROW 1: JUMLAH */}
                         <tr className="border border-black font-bold bg-slate-50">
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center"></td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-left uppercase text-slate-900">Jumlah / الجملة</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center font-extrabold text-slate-950 text-xs">{totalScore}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-left text-[10px] font-normal italic text-slate-500">{terbilangIndo(totalScore)}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-right font-serif text-[10px] font-bold text-emerald-950" dir="rtl">{terbilangArab(totalScore)}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center font-serif font-bold text-emerald-950">{toArabicDigits(totalScore)}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-right font-serif uppercase text-slate-900">الجملة</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 text-center font-serif"></td>
+                          <td className={`${footerCellCls} border-r border-black text-center`}></td>
+                          <td className={`${footerCellCls} border-r border-black text-left uppercase text-slate-900`}>Jumlah / الجملة</td>
+                          <td className={`${footerCellCls} border-r border-black text-center font-extrabold text-slate-950 text-xs`}>{totalScore}</td>
+                          <td className={`${footerCellCls} border-r border-black text-left text-[10px] font-normal italic text-slate-500`}>{terbilangIndo(totalScore)}</td>
+                          <td className={`${footerCellCls} border-r border-black text-right font-serif text-[10px] font-bold text-emerald-950`} dir="rtl">{terbilangArab(totalScore)}</td>
+                          <td className={`${footerCellCls} border-r border-black text-center font-serif font-bold text-emerald-950`}>{toArabicDigits(totalScore)}</td>
+                          <td className={`${footerCellCls} border-r border-black text-right font-serif uppercase text-slate-900`}>الجملة</td>
+                          <td className={`${footerCellCls} text-center font-serif`}></td>
                         </tr>
 
                         {/* FOOTER ROW 2: RATA-RATA */}
                         <tr className="border border-black font-bold bg-slate-50">
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center"></td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-left uppercase text-slate-900">Rata-rata / متوسط الدرجة</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center font-extrabold text-slate-950 text-xs">{averageScore}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-left text-[10px]" colSpan={2}></td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-center font-serif font-bold text-emerald-950">{toArabicDigits(Math.round(Number(averageScore)))}</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 border-r border-black text-right font-serif uppercase text-slate-900">متوسط الدرجة</td>
-                          <td className="p-1.5 print:py-0.5 print:px-1 text-center font-serif"></td>
+                          <td className={`${footerCellCls} border-r border-black text-center`}></td>
+                          <td className={`${footerCellCls} border-r border-black text-left uppercase text-slate-900`}>Rata-rata / متوسط الدرجة</td>
+                          <td className={`${footerCellCls} border-r border-black text-center font-extrabold text-slate-950 text-xs`}>{averageScore}</td>
+                          <td className={`${footerCellCls} border-r border-black text-left text-[10px]`} colSpan={2}></td>
+                          <td className={`${footerCellCls} border-r border-black text-center font-serif font-bold text-emerald-950`}>{toArabicDigits(Math.round(Number(averageScore)))}</td>
+                          <td className={`${footerCellCls} border-r border-black text-right font-serif uppercase text-slate-900`}>متوسط الدرجة</td>
+                          <td className={`${footerCellCls} text-center font-serif`}></td>
                         </tr>
 
                         {/* FOOTER ROW 3: PERINGKAT (DETERMINED BY USER TOGGLE) */}
@@ -539,40 +556,41 @@ export default function RaportPrint({
                       </tbody>
                     </table>
                   </div>
-                   {/* ATTENDANCE & KEPRIBADIAN SIDE-BY-SIDE */}
-                  <div className="grid grid-cols-2 gap-4 print:gap-2 my-3 print:my-1.5 text-[11px] print:text-[9.5px] font-sans print-avoid-break">
+
+                  {/* ATTENDANCE & KEPRIBADIAN SIDE-BY-SIDE */}
+                  <div className={`grid grid-cols-2 gap-4 print:gap-2 ${isUltraCompact ? 'my-1 print:my-0.5 text-[10px] print:text-[8px]' : isCompact ? 'my-2 print:my-1 text-[11px] print:text-[9px]' : 'my-3 print:my-1.5 text-[11px] print:text-[9.5px]'} font-sans print-avoid-break`}>
                     {/* 1. KEPRIBADIAN TABLE */}
                     <table className="w-full border border-black border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-black">
-                          <th colSpan={3} className="p-1 print:py-0.5 print:px-1 border-r border-black font-bold uppercase text-[9px] text-left">KEPRIBADIAN</th>
-                          <th className="p-1 print:py-0.5 print:px-1 font-serif font-bold uppercase text-[9px] text-right">احوال الطالب</th>
+                          <th colSpan={3} className={`${cellCls} border-r border-black font-bold uppercase text-[9px] text-left`}>KEPRIBADIAN</th>
+                          <th className={`${cellCls} font-serif font-bold uppercase text-[9px] text-right`}>احوال الطالب</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">1. Akhlaq</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.akhlaq || 'B'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.akhlaq || 'B')}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">اخلاق</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>1. Akhlaq</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.akhlaq || 'B'}</td>
+                          <td className={`${cellCls} border-r border-black font-serif text-emerald-950 text-right font-bold`} dir="rtl">{getPersonalityAr(st.akhlaq || 'B')}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">اخلاق</td>
                         </tr>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">2. Kerajinan</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.kerajinan || 'B'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerajinan || 'B')}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">مجتهد</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>2. Kerajinan</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.kerajinan || 'B'}</td>
+                          <td className={`${cellCls} border-r border-black font-serif text-emerald-950 text-right font-bold`} dir="rtl">{getPersonalityAr(st.kerajinan || 'B')}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">مجتهد</td>
                         </tr>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">3. Kedisiplinan</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.kedisiplinan || 'B'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kedisiplinan || 'B')}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">تأديب</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>3. Kedisiplinan</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.kedisiplinan || 'B'}</td>
+                          <td className={`${cellCls} border-r border-black font-serif text-emerald-950 text-right font-bold`} dir="rtl">{getPersonalityAr(st.kedisiplinan || 'B')}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">تأديب</td>
                         </tr>
                         <tr>
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">4. Kerapihan</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.kerapihan || 'B'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-serif text-emerald-950 text-right font-bold" dir="rtl">{getPersonalityAr(st.kerapihan || 'B')}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">نظافة</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>4. Kerapihan</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.kerapihan || 'B'}</td>
+                          <td className={`${cellCls} border-r border-black font-serif text-emerald-950 text-right font-bold`} dir="rtl">{getPersonalityAr(st.kerapihan || 'B')}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">نظافة</td>
                         </tr>
                       </tbody>
                     </table>
@@ -581,73 +599,73 @@ export default function RaportPrint({
                     <table className="w-full border border-black border-collapse text-center">
                       <thead>
                         <tr className="bg-slate-50 border-b border-black">
-                          <th colSpan={3} className="p-1 print:py-0.5 print:px-1 border-r border-black font-bold uppercase text-[9px] text-left">Absensi</th>
-                          <th className="p-1 print:py-0.5 print:px-1 font-serif font-bold uppercase text-[9px] text-right">كشف الغياب</th>
+                          <th colSpan={3} className={`${cellCls} border-r border-black font-bold uppercase text-[9px] text-left`}>Absensi</th>
+                          <th className={`${cellCls} font-serif font-bold uppercase text-[9px] text-right`}>كشف الغياب</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">Sakit</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.sakit > 0 ? st.sakit : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-bold text-slate-700">{st.sakit > 0 ? toArabicDigits(st.sakit) : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">بعذر</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>Sakit</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.sakit > 0 ? st.sakit : '-'}</td>
+                          <td className={`${cellCls} text-center font-serif font-bold text-slate-700`}>{st.sakit > 0 ? toArabicDigits(st.sakit) : '-'}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">بعذر</td>
                         </tr>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">Izin</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.izin > 0 ? st.izin : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-bold text-slate-700">{st.izin > 0 ? toArabicDigits(st.izin) : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">بغير عذر</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>Izin</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.izin > 0 ? st.izin : '-'}</td>
+                          <td className={`${cellCls} text-center font-serif font-bold text-slate-700`}>{st.izin > 0 ? toArabicDigits(st.izin) : '-'}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">بغير عذر</td>
                         </tr>
                         <tr className="border-b border-black">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black font-semibold text-slate-800 text-left">Alpa</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-900">{st.alpa > 0 ? st.alpa : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-bold text-slate-700">{st.alpa > 0 ? toArabicDigits(st.alpa) : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-semibold text-right text-emerald-950" dir="rtl">بغير بيان</td>
+                          <td className={`${cellCls} border-r border-black font-semibold text-slate-800 text-left`}>Alpa</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-900`}>{st.alpa > 0 ? st.alpa : '-'}</td>
+                          <td className={`${cellCls} text-center font-serif font-bold text-slate-700`}>{st.alpa > 0 ? toArabicDigits(st.alpa) : '-'}</td>
+                          <td className={`${cellCls} font-serif font-semibold text-right text-emerald-950`} dir="rtl">بغير بيان</td>
                         </tr>
                         <tr className="font-bold">
-                          <td className="p-1 print:py-0.5 print:px-1 border-r border-black text-slate-900 text-left uppercase">Jumlah</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-extrabold text-slate-950">{(st.sakit + st.izin + st.alpa) > 0 ? (st.sakit + st.izin + st.alpa) : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 text-center font-serif font-extrabold text-slate-950">{(st.sakit + st.izin + st.alpa) > 0 ? toArabicDigits(st.sakit + st.izin + st.alpa) : '-'}</td>
-                          <td className="p-1 print:py-0.5 print:px-1 font-serif font-bold text-right text-emerald-950" dir="rtl">الجملة</td>
+                          <td className={`${cellCls} border-r border-black text-slate-900 text-left uppercase`}>Jumlah</td>
+                          <td className={`${cellCls} text-center font-extrabold text-slate-950`}>{(st.sakit + st.izin + st.alpa) > 0 ? (st.sakit + st.izin + st.alpa) : '-'}</td>
+                          <td className={`${cellCls} text-center font-serif font-extrabold text-slate-950`}>{(st.sakit + st.izin + st.alpa) > 0 ? toArabicDigits(st.sakit + st.izin + st.alpa) : '-'}</td>
+                          <td className={`${cellCls} font-serif font-bold text-right text-emerald-950`} dir="rtl">الجملة</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
                   {/* 3. CATATAN GURU */}
-                  <div className="border border-black p-2 print:p-1.5 my-3 print:my-1.5 text-xs print:text-[10px] print-avoid-break">
+                  <div className={`border border-black p-2 print:p-1.5 ${isUltraCompact ? 'my-1 print:my-0.5 text-[10px] print:text-[8.5px]' : isCompact ? 'my-2 print:my-1 text-xs print:text-[9.5px]' : 'my-3 print:my-1.5 text-xs print:text-[10px]'} print-avoid-break`}>
                     <p className="font-extrabold text-slate-950 border-b border-black pb-1 print:pb-0.5 uppercase tracking-wider text-[10px] print:text-[9px] text-center">
                       CATATAN WALI KELAS
                     </p>
-                    <p className="text-center font-semibold italic text-xs print:text-[10px] mt-1.5 print:mt-1 min-h-[24px] print:min-h-0 text-slate-800 leading-relaxed">
+                    <p className={`text-center font-semibold italic ${isUltraCompact ? 'text-[10px] print:text-[8.5px] mt-0.5 print:mt-0' : isCompact ? 'text-xs print:text-[9px] mt-1 print:mt-0.5' : 'text-xs print:text-[10px] mt-1.5 print:mt-1'} min-h-[24px] print:min-h-0 text-slate-800 leading-relaxed`}>
                       "{st.catatan || 'Kurangi waktu bermain, tingkatkan lagi waktu belajarnya.'}"
                     </p>
                   </div>
 
                   {/* SIGNATURE GRID */}
-                  <div className="mt-6 print:mt-10 text-xs text-center font-sans print-avoid-break">
+                  <div className={`mt-6 ${isUltraCompact ? 'print:mt-3' : isCompact ? 'print:mt-6' : 'print:mt-10'} text-xs text-center font-sans print-avoid-break`}>
                     {/* TOP ROW: Orang Tua/Wali, Wali Kelas, Kepala Madin */}
-                    <div className="grid grid-cols-3 gap-4 mb-6 print:mb-8 items-start">
+                    <div className={`grid grid-cols-3 gap-4 ${isUltraCompact ? 'mb-3 print:mb-2' : isCompact ? 'mb-4 print:mb-4' : 'mb-6 print:mb-8'} items-start`}>
                       {/* Parent */}
-                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
+                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Orang Tua / Wali Santri</p>
-                        <div className="h-20 print:h-16 flex items-center justify-center" />
+                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`} />
                         <div className="border-b border-black w-32 mx-auto" />
                       </div>
 
                       {/* Wali Kelas */}
-                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
+                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Wali Kelas</p>
-                        <div className="h-20 print:h-16 flex items-center justify-center" />
+                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`} />
                         <p className="font-bold underline uppercase leading-tight text-center">{waliKelas}</p>
                       </div>
 
                       {/* Kepala Madin */}
-                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
+                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Kepala Madrasah Diniyah</p>
-                        <div className="h-20 print:h-16 flex items-center justify-center">
+                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`}>
                           {settings.ttdKepala && (
-                            <img src={settings.ttdKepala} alt="TTD Kepala" className="h-12 max-w-[100px] object-contain mx-auto" />
+                            <img src={settings.ttdKepala} alt="TTD Kepala" className={`${sigImgHeightCls} max-w-[100px] object-contain mx-auto`} />
                           )}
                         </div>
                         <p className="font-bold underline uppercase leading-tight text-center">{settings.namaKepala}</p>
@@ -655,14 +673,14 @@ export default function RaportPrint({
                     </div>
 
                     {/* BOTTOM ROW: Pengasuh (Centered) */}
-                    <div className="flex flex-col items-center justify-between h-32 print:h-28 mt-4 print:mt-6 print-avoid-break">
+                    <div className={`flex flex-col items-center justify-between h-32 ${sigHeightCls} ${isUltraCompact ? 'mt-2 print:mt-2' : isCompact ? 'mt-3 print:mt-4' : 'mt-4 print:mt-6'} print-avoid-break`}>
                       <p className="font-semibold text-center">
                         Mengetahui,<br />
                         Pengasuh PPTQ Al-Husna BR
                       </p>
-                      <div className="h-20 print:h-16 flex items-center justify-center">
+                      <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`}>
                         {settings.ttdPengasuh && (
-                          <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-12 max-w-[100px] object-contain mx-auto" />
+                          <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className={`${sigImgHeightCls} max-w-[100px] object-contain mx-auto`} />
                         )}
                       </div>
                       <p className="font-bold underline uppercase leading-tight text-center">{settings.namaPengasuh}</p>
