@@ -243,8 +243,8 @@ export default function RaportPrint({
               ? "p-1.5 print:py-0.5 print:px-1" 
               : "p-1.5 print:py-0.5 print:px-1";
 
-          const sigHeightCls = isUltraCompact ? "print:h-20" : isCompact ? "print:h-24" : "print:h-28";
-          const sigSpacerCls = isUltraCompact ? "print:h-10" : isCompact ? "print:h-12" : "print:h-16";
+          const sigHeightCls = isUltraCompact ? "h-24 print:h-24" : isCompact ? "h-28 print:h-28" : "h-36 print:h-36";
+          const sigSpacerCls = isUltraCompact ? "h-12 print:h-12" : isCompact ? "h-16 print:h-16" : "h-24 print:h-24";
           const sigImgHeightCls = isUltraCompact ? "h-8 print:h-8" : isCompact ? "h-10 print:h-10" : "h-12 print:h-12";
 
           // Calculate class ranking for this student using the classActiveSubjects
@@ -647,23 +647,23 @@ export default function RaportPrint({
                     {/* TOP ROW: Orang Tua/Wali, Wali Kelas, Kepala Madin */}
                     <div className={`grid grid-cols-3 gap-4 ${isUltraCompact ? 'mb-3 print:mb-2' : isCompact ? 'mb-4 print:mb-4' : 'mb-6 print:mb-8'} items-start`}>
                       {/* Parent */}
-                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
+                      <div className={`flex flex-col justify-between ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Orang Tua / Wali Santri</p>
-                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`} />
+                        <div className={`${sigSpacerCls} flex items-center justify-center`} />
                         <div className="border-b border-black w-32 mx-auto" />
                       </div>
 
                       {/* Wali Kelas */}
-                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
+                      <div className={`flex flex-col justify-between ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Wali Kelas</p>
-                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`} />
+                        <div className={`${sigSpacerCls} flex items-center justify-center`} />
                         <p className="font-bold underline uppercase leading-tight text-center">{waliKelas}</p>
                       </div>
 
                       {/* Kepala Madin */}
-                      <div className={`flex flex-col justify-between h-32 ${sigHeightCls} print-avoid-break`}>
+                      <div className={`flex flex-col justify-between ${sigHeightCls} print-avoid-break`}>
                         <p className="font-semibold text-center">Kepala Madrasah Diniyah</p>
-                        <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`}>
+                        <div className={`${sigSpacerCls} flex items-center justify-center`}>
                           {settings.ttdKepala && (
                             <img src={settings.ttdKepala} alt="TTD Kepala" className={`${sigImgHeightCls} max-w-[100px] object-contain mx-auto`} />
                           )}
@@ -673,12 +673,12 @@ export default function RaportPrint({
                     </div>
 
                     {/* BOTTOM ROW: Pengasuh (Centered) */}
-                    <div className={`flex flex-col items-center justify-between h-32 ${sigHeightCls} ${isUltraCompact ? 'mt-2 print:mt-2' : isCompact ? 'mt-3 print:mt-4' : 'mt-4 print:mt-6'} print-avoid-break`}>
+                    <div className={`flex flex-col items-center justify-between ${sigHeightCls} ${isUltraCompact ? 'mt-2 print:mt-2' : isCompact ? 'mt-3 print:mt-4' : 'mt-4 print:mt-6'} print-avoid-break`}>
                       <p className="font-semibold text-center">
                         Mengetahui,<br />
                         Pengasuh PPTQ Al-Husna BR
                       </p>
-                      <div className={`h-20 ${sigSpacerCls} flex items-center justify-center`}>
+                      <div className={`${sigSpacerCls} flex items-center justify-center`}>
                         {settings.ttdPengasuh && (
                           <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className={`${sigImgHeightCls} max-w-[100px] object-contain mx-auto`} />
                         )}
