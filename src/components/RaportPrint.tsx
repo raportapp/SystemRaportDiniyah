@@ -625,27 +625,27 @@ export default function RaportPrint({
                   </div>
 
                   {/* SIGNATURE GRID */}
-                  <div className="mt-6 print:mt-3 text-xs text-center font-sans print-avoid-break">
+                  <div className="mt-6 print:mt-10 text-xs text-center font-sans print-avoid-break">
                     {/* TOP ROW: Orang Tua/Wali, Wali Kelas, Kepala Madin */}
-                    <div className="grid grid-cols-3 gap-4 mb-6 print:mb-2 items-start">
+                    <div className="grid grid-cols-3 gap-4 mb-6 print:mb-8 items-start">
                       {/* Parent */}
-                      <div className="flex flex-col justify-between h-28 print:h-20 print-avoid-break">
+                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
                         <p className="font-semibold text-center">Orang Tua / Wali Santri</p>
-                        <div className="h-16 print:h-10 flex items-center justify-center" />
+                        <div className="h-20 print:h-16 flex items-center justify-center" />
                         <div className="border-b border-black w-32 mx-auto" />
                       </div>
 
                       {/* Wali Kelas */}
-                      <div className="flex flex-col justify-between h-28 print:h-20 print-avoid-break">
+                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
                         <p className="font-semibold text-center">Wali Kelas</p>
-                        <div className="h-16 print:h-10 flex items-center justify-center" />
+                        <div className="h-20 print:h-16 flex items-center justify-center" />
                         <p className="font-bold underline uppercase leading-tight text-center">{waliKelas}</p>
                       </div>
 
                       {/* Kepala Madin */}
-                      <div className="flex flex-col justify-between h-28 print:h-20 print-avoid-break">
+                      <div className="flex flex-col justify-between h-32 print:h-28 print-avoid-break">
                         <p className="font-semibold text-center">Kepala Madrasah Diniyah</p>
-                        <div className="h-16 print:h-10 flex items-center justify-center">
+                        <div className="h-20 print:h-16 flex items-center justify-center">
                           {settings.ttdKepala && (
                             <img src={settings.ttdKepala} alt="TTD Kepala" className="h-12 max-w-[100px] object-contain mx-auto" />
                           )}
@@ -655,12 +655,12 @@ export default function RaportPrint({
                     </div>
 
                     {/* BOTTOM ROW: Pengasuh (Centered) */}
-                    <div className="flex flex-col items-center justify-between h-28 print:h-20 mt-4 print:mt-1 print-avoid-break">
+                    <div className="flex flex-col items-center justify-between h-32 print:h-28 mt-4 print:mt-6 print-avoid-break">
                       <p className="font-semibold text-center">
                         Mengetahui,<br />
                         Pengasuh PPTQ Al-Husna BR
                       </p>
-                      <div className="h-16 print:h-10 flex items-center justify-center">
+                      <div className="h-20 print:h-16 flex items-center justify-center">
                         {settings.ttdPengasuh && (
                           <img src={settings.ttdPengasuh} alt="TTD Pengasuh" className="h-12 max-w-[100px] object-contain mx-auto" />
                         )}
