@@ -98,9 +98,10 @@ export function compressBase64Image(
         }
       }
 
-      // Use PNG for transparency if background removal was performed
-      const outputFormat = removeBg ? 'image/png' : 'image/jpeg';
-      const compressed = canvas.toDataURL(outputFormat, removeBg ? undefined : quality);
+      // Use PNG for transparency if background removal was performed or if the original format supports transparency (PNG, GIF, WebP)
+      const isTransparentFormat = base64Str.includes('image/png') || base64Str.includes('image/gif') || base64Str.includes('image/webp');
+      const outputFormat = (removeBg || isTransparentFormat) ? 'image/png' : 'image/jpeg';
+      const compressed = canvas.toDataURL(outputFormat, (removeBg || isTransparentFormat) ? undefined : quality);
       resolve(compressed);
     };
     img.onerror = () => {
