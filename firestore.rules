@@ -8,12 +8,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        request.auth.token.email == 'admin@alhusna.app' ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
-      );
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     // Default deny catch-all
@@ -21,47 +16,56 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Students collection: accessible by authenticated users
+    // Students collection: authenticated read/create/update, admin delete
     match /students/{studentId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // Subjects collection: accessible by authenticated users
-    match /subjects/{subjectId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // Class Subjects mappings: accessible by authenticated users
-    match /class_subjects/{mappingId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // Teachers collection: accessible by authenticated users
-    match /teachers/{classId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // System Settings collection: public read for school logo/header, authenticated write
-    match /settings/{settingId} {
-      allow read: if true;
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // System Activity Logs: authenticated read/create, admin delete
-    match /logs/{logId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
-    // User accounts collection: authenticated read/write
+    // Subjects collection: authenticated read/create/update, admin delete
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Class Subjects mappings: authenticated read/create/update, admin delete
+    match /class_subjects/{mappingId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Teachers collection: authenticated read/create/update, admin delete
+    match /teachers/{classId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // System Settings collection: public read for school logo/header, admin write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // System Activity Logs: authenticated read/create (append-only), admin delete
+    match /logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // User accounts collection: authenticated read, admin create/delete, restricted update
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() ||
+                       (isSignedIn() && request.auth.uid == userId &&
+                        !('role' in request.resource.data.diff(resource.data).affectedKeys()));
+      allow delete: if isAdmin();
     }
   }
 }
+

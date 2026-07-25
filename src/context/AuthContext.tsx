@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
   signOut as firebaseSignOut,
   updatePassword as firebaseUpdatePassword,
   User as FirebaseUser
@@ -21,6 +20,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserPassword: (newPassword: string) => Promise<void>;
   setCurrentUser: React.Dispatch<React.SetStateAction<UserAccount | null>>;
+  refreshAuthClaims: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,11 +36,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
 
+  const refreshAuthClaims = async () => {
+    if (auth.currentUser) {
+      try {
+        const idTokenResult = await auth.currentUser.getIdTokenResult(true);
+        if (currentUser) {
+          const hasAdminClaim = idTokenResult.claims.admin === true;
+          setCurrentUser(prev => prev ? { ...prev, role: hasAdminClaim ? 'admin' : prev.role } : null);
+        }
+      } catch (err) {
+        console.error("Gagal merefresh token auth:", err);
+      }
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
         try {
+          const idTokenResult = await user.getIdTokenResult();
+          const hasAdminClaim = idTokenResult.claims.admin === true;
+
           // Fetch users list from dbService to find profile corresponding to user
           const allUsers = await dbService.getUsers();
           const list = allUsers && allUsers.length > 0 ? allUsers : INITIAL_USERS;
@@ -60,10 +77,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               id: user.uid,
               username: unameFromEmail || 'user',
               fullname: user.displayName || unameFromEmail || 'Pengguna',
-              role: unameFromEmail === 'admin' ? 'admin' : 'teacher',
+              role: hasAdminClaim ? 'admin' : (unameFromEmail === 'admin' ? 'admin' : 'teacher'),
               email: user.email || undefined
             };
+          } else if (hasAdminClaim) {
+            matched = { ...matched, role: 'admin' };
           }
+
           setCurrentUser(matched);
         } catch (err) {
           console.error("Error matching user profile on Auth state change:", err);
@@ -85,40 +105,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const profile = usersList.find(u => u.username.toLowerCase() === username);
 
     try {
-      // 1. Attempt standard Firebase Auth sign-in
+      // Attempt standard Firebase Auth sign-in ONLY (no auto registration)
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       
-      const userProfile: UserAccount = profile || {
+      // Force token refresh to get updated custom claims
+      const idTokenResult = await userCred.user.getIdTokenResult(true);
+      const hasAdminClaim = idTokenResult.claims.admin === true;
+
+      const userRole = hasAdminClaim ? 'admin' : (profile?.role || (username === 'admin' ? 'admin' : 'teacher'));
+
+      const userProfile: UserAccount = profile ? {
+        ...profile,
+        role: userRole
+      } : {
         id: userCred.user.uid,
         username,
         fullname: username === 'admin' ? 'Administrator PPTQ' : 'Ustadz / Guru',
-        role: username === 'admin' ? 'admin' : 'teacher',
+        role: userRole,
         email
       };
 
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
-      // 2. If user doesn't exist in Firebase Auth yet, auto-provision if correct default password or profile exists
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        // Try creating account on Firebase Auth
-        try {
-          const newCred = await createUserWithEmailAndPassword(auth, email, password);
-          const userProfile: UserAccount = profile || {
-            id: newCred.user.uid,
-            username,
-            fullname: username === 'admin' ? 'Administrator PPTQ' : 'Ustadz / Guru',
-            role: username === 'admin' ? 'admin' : 'teacher',
-            email
-          };
-
-          // Save user to db
-          await dbService.saveUser(userProfile);
-          setCurrentUser(userProfile);
-          return userProfile;
-        } catch (createErr: any) {
-          throw new Error('Password salah atau gagal otentikasi. Silakan periksa kembali.');
-        }
+      if (
+        err.code === 'auth/user-not-found' || 
+        err.code === 'auth/invalid-credential' || 
+        err.code === 'auth/wrong-password'
+      ) {
+        throw new Error('Username atau password tidak ditemukan / salah. Silakan hubungi Administrator untuk pembuatan akun.');
       }
       throw err;
     }
@@ -146,7 +161,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       login,
       logout,
       updateUserPassword,
-      setCurrentUser
+      setCurrentUser,
+      refreshAuthClaims
     }}>
       {children}
     </AuthContext.Provider>
@@ -160,3 +176,4 @@ export const useAuthContext = () => {
   }
   return context;
 };
+
