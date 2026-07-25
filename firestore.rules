@@ -1,32 +1,67 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == 'admin@alhusna.app' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Students collection: accessible by authenticated users
     match /students/{studentId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
+    // Subjects collection: accessible by authenticated users
     match /subjects/{subjectId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
+    // Class Subjects mappings: accessible by authenticated users
     match /class_subjects/{mappingId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
+    // Teachers collection: accessible by authenticated users
     match /teachers/{classId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
+    // System Settings collection: public read for school logo/header, authenticated write
     match /settings/{settingId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
     }
 
+    // System Activity Logs: authenticated read/create, admin delete
     match /logs/{logId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
+    // User accounts collection: authenticated read/write
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
   }
 }

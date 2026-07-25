@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, User, AlertCircle, RefreshCw } from 'lucide-react';
 import { UserAccount, SystemSettings } from '../types';
-const defaultLogo = "/logo.svg";
 import LogoUploadModal from './LogoUploadModal';
-import { hashPassword } from '../utils/hash';
+import { useAuth } from '../hooks/useAuth';
+
+const defaultLogo = "/logo.svg";
 
 interface LoginProps {
   users: UserAccount[];
   settings: SystemSettings;
   useCloudSync?: boolean;
-  onLoginSuccess: (user: UserAccount) => void;
+  onLoginSuccess?: (user: UserAccount) => void;
   onSaveLogo: (newLogoBase64: string) => void;
   onRefreshUsers?: () => Promise<UserAccount[]>;
 }
@@ -18,7 +19,6 @@ export default function Login({
   users, 
   settings, 
   useCloudSync = false, 
-  onLoginSuccess, 
   onSaveLogo,
   onRefreshUsers
 }: LoginProps) {
@@ -28,13 +28,15 @@ export default function Login({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLogoModal, setShowLogoModal] = useState(false);
 
+  const { login } = useAuth();
+
   const handleManualRefresh = async () => {
     if (!onRefreshUsers) return;
     setIsRefreshing(true);
     setError('');
     try {
       await onRefreshUsers();
-      alert("Berhasil memperbarui daftar akun guru dari cloud database!");
+      alert("Berhasil memperbarui daftar akun dari cloud database!");
     } catch (err: any) {
       console.error("Gagal memuat ulang pengguna:", err);
       setError("Gagal memuat ulang daftar pengguna dari cloud.");
@@ -49,55 +51,26 @@ export default function Login({
 
     try {
       if (!username.trim()) {
-        setError('Username tidak boleh kosong!');
+        setError('Username atau email tidak boleh kosong!');
+        return;
+      }
+      if (!password) {
+        setError('Password tidak boleh kosong!');
         return;
       }
 
-      // Find user by username locally first
-      let user = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
-
-      // If username is not found and cloud sync is enabled, try refreshing the list in real-time
-      if (!user && useCloudSync && onRefreshUsers) {
-        setIsRefreshing(true);
-        try {
-          const freshUsers = await onRefreshUsers();
-          user = freshUsers.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
-        } catch (err) {
-          console.error("Error refreshing users list on demand:", err);
-        } finally {
-          setIsRefreshing(false);
-        }
-      }
-
-      if (!user) {
-        setError('Username tidak ditemukan! Silakan pastikan ejaan username benar, atau hubungi Admin jika akun baru saja dibuat.');
-        return;
-      }
-
-      // Modern SHA-256 Hashed Password Verification
-      const hashedInput = await hashPassword(password);
-      
-      const hasCustomPassword = !!user.password;
-      
-      // Check if it matches the stored hashed password, or matches plain text (legacy)
-      const isCustomMatch = hasCustomPassword && (password === user.password || hashedInput === user.password);
-      
-      // Default fallback: only allow the account's own username as the default password if no custom password is set
-      const isFallbackMatch = !hasCustomPassword && password === user.username.toLowerCase();
-
-      if (isCustomMatch || isFallbackMatch) {
-        // If logging in via legacy or fallback, we will pass along a flag so App.tsx can automatically migrate it
-        const updatedUser = { ...user };
-        if (!hasCustomPassword || password === user.password) {
-          updatedUser.password = hashedInput; // Automatically hash and upgrade the password
-        }
-        onLoginSuccess(updatedUser);
-      } else {
-        setError('Password salah! Silakan masukkan password yang tepat atau hubungi Administrator.');
-      }
+      setIsRefreshing(true);
+      await login(username, password, users);
     } catch (err: any) {
-      console.error("Critical login error:", err);
-      setError(`Gagal memproses login karena masalah sistem: ${err.message || String(err)}. Hubungi developer.`);
+      console.error("Login error:", err);
+      const msg = err.message || String(err);
+      if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
+        setError('Username / Email atau Password salah. Silakan periksa kembali.');
+      } else {
+        setError(`Gagal masuk: ${msg}`);
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -113,7 +86,7 @@ export default function Login({
         {/* Header Banner */}
         <div className="bg-gradient-to-br from-emerald-900 via-emerald-850 to-teal-950 text-white px-6 py-8 text-center relative">
           <div className="absolute top-2 right-2 bg-emerald-800/40 text-[9px] font-mono tracking-wider px-2 py-0.5 rounded-full text-emerald-300 uppercase">
-            v2.1 Stable
+            v2.2 Secure
           </div>
           
           <div 
@@ -135,7 +108,7 @@ export default function Login({
         <form onSubmit={handleLogin} className="p-6 sm:p-8 space-y-5">
           <div className="text-center">
             <h3 className="text-base font-bold text-slate-800">Silakan Masuk ke Sistem</h3>
-            <p className="text-xs text-slate-500 mt-1">Gunakan akun Guru / Admin Anda untuk mengelola nilai santri</p>
+            <p className="text-xs text-slate-500 mt-1">Gunakan otentikasi akun Guru / Admin Anda</p>
           </div>
 
           {error && (
@@ -148,7 +121,7 @@ export default function Login({
           <div className="space-y-4">
             {/* Username Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">Username</label>
+              <label className="text-xs font-bold text-slate-700 block">Username / Email</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <User size={16} />
@@ -189,7 +162,7 @@ export default function Login({
             className="w-full bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white font-bold text-sm py-3 rounded-xl shadow-md transition duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
           >
             <ShieldCheck size={18} />
-            <span>{isRefreshing ? "Memproses..." : "Masuk Sistem"}</span>
+            <span>{isRefreshing ? "Memproses Otentikasi..." : "Masuk Sistem"}</span>
           </button>
 
           {useCloudSync && onRefreshUsers && (
@@ -209,7 +182,7 @@ export default function Login({
 
         {/* Footer info */}
         <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-[10px] text-slate-400 font-medium">
-          &copy; 2026 PPTQ Al-Husna. All Rights Reserved. dibuat oleh Achmad Husain
+          &copy; 2026 PPTQ Al-Husna. All Rights Reserved. Terproteksi Firebase Authentication.
         </div>
       </div>
 
@@ -224,3 +197,4 @@ export default function Login({
     </div>
   );
 }
+

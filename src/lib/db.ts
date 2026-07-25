@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { 
   collection, 
   doc, 
@@ -12,6 +12,15 @@ import {
   limit
 } from 'firebase/firestore';
 import { Student, Subject, ClassSubject, ClassTeacher, SystemSettings, SystemLog, UserAccount } from '../types';
+import {
+  validateStudent,
+  validateSubject,
+  validateClassSubject,
+  validateClassTeacher,
+  validateSystemSettings,
+  validateSystemLog,
+  validateUserAccount
+} from '../utils/validators';
 
 // Collection references
 const STUDENTS_COLL = 'students';
@@ -22,9 +31,21 @@ const SETTINGS_COLL = 'settings';
 const LOGS_COLL = 'logs';
 const USERS_COLL = 'users';
 
-// Helper to sanitize undefined values for Firestore
-function sanitizeData<T>(data: T): T {
-  return JSON.parse(JSON.stringify(data));
+// Explicit sanitizer for Firestore (recursively removes undefined fields safely)
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+  if (typeof data !== 'object') return data;
+  if (data instanceof Date) return data;
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = sanitizeForFirestore(value);
+    }
+  }
+  return cleaned as T;
 }
 
 // Error handling definitions per firebase-integration skill instructions
@@ -50,13 +71,14 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const currentUser = auth.currentUser;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: null,
-      email: null,
-      emailVerified: null,
-      isAnonymous: null
+      userId: currentUser?.uid || null,
+      email: currentUser?.email || null,
+      emailVerified: currentUser?.emailVerified || null,
+      isAnonymous: currentUser?.isAnonymous || null
     },
     operationType,
     path
@@ -77,11 +99,15 @@ const rawDbService = {
   // --- STUDENTS ---
   async getStudents(): Promise<Student[]> {
     try {
-      const q = query(collection(db, STUDENTS_COLL));
+      const q = query(collection(db, STUDENTS_COLL), limit(300));
       const querySnapshot = await getDocs(q);
       const list: Student[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as Student);
+        try {
+          list.push(validateStudent(doc.data()));
+        } catch (valErr) {
+          console.warn(`Corrupted student doc ${doc.id}:`, valErr);
+        }
       });
       return list;
     } catch (error) {
@@ -93,7 +119,7 @@ const rawDbService = {
     const docPath = `${STUDENTS_COLL}/${student.id}`;
     try {
       const docRef = doc(db, STUDENTS_COLL, student.id);
-      await setDoc(docRef, sanitizeData(student));
+      await setDoc(docRef, sanitizeForFirestore(student));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -104,7 +130,7 @@ const rawDbService = {
       const batch = writeBatch(db);
       for (const st of studentsList) {
         const docRef = doc(db, STUDENTS_COLL, st.id);
-        batch.set(docRef, sanitizeData(st));
+        batch.set(docRef, sanitizeForFirestore(st));
       }
       await batch.commit();
     } catch (error) {
@@ -146,7 +172,11 @@ const rawDbService = {
       const querySnapshot = await getDocs(q);
       const list: Subject[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as Subject);
+        try {
+          list.push(validateSubject(doc.data()));
+        } catch (valErr) {
+          console.warn(`Corrupted subject doc ${doc.id}:`, valErr);
+        }
       });
       // Sort by ID ascending
       return list.sort((a, b) => a.id - b.id);
@@ -159,7 +189,7 @@ const rawDbService = {
     const docPath = `${SUBJECTS_COLL}/sub-${subject.id}`;
     try {
       const docRef = doc(db, SUBJECTS_COLL, `sub-${subject.id}`);
-      await setDoc(docRef, sanitizeData(subject));
+      await setDoc(docRef, sanitizeForFirestore(subject));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -182,7 +212,11 @@ const rawDbService = {
       const querySnapshot = await getDocs(q);
       const list: ClassSubject[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as ClassSubject);
+        try {
+          list.push(validateClassSubject(doc.data()));
+        } catch (valErr) {
+          console.warn(`Corrupted class_subject doc ${doc.id}:`, valErr);
+        }
       });
       return list;
     } catch (error) {
@@ -196,7 +230,7 @@ const rawDbService = {
       for (const m of mappings) {
         const docId = `${m.kelas.replace(/[^a-zA-Z0-9]/g, '_')}_${m.subjectId}`;
         const docRef = doc(db, CLASSSUBJECTS_COLL, docId);
-        batch.set(docRef, sanitizeData(m));
+        batch.set(docRef, sanitizeForFirestore(m));
       }
       await batch.commit();
     } catch (error) {
@@ -220,7 +254,7 @@ const rawDbService = {
     const docPath = `${CLASSSUBJECTS_COLL}/${docId}`;
     try {
       const docRef = doc(db, CLASSSUBJECTS_COLL, docId);
-      await setDoc(docRef, sanitizeData({ kelas, subjectId }));
+      await setDoc(docRef, sanitizeForFirestore({ kelas, subjectId }));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -233,7 +267,11 @@ const rawDbService = {
       const querySnapshot = await getDocs(q);
       const list: ClassTeacher[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as ClassTeacher);
+        try {
+          list.push(validateClassTeacher(doc.data()));
+        } catch (valErr) {
+          console.warn(`Corrupted teacher doc ${doc.id}:`, valErr);
+        }
       });
       return list;
     } catch (error) {
@@ -246,7 +284,7 @@ const rawDbService = {
     const docPath = `${TEACHERS_COLL}/${docId}`;
     try {
       const docRef = doc(db, TEACHERS_COLL, docId);
-      await setDoc(docRef, sanitizeData(teacher));
+      await setDoc(docRef, sanitizeForFirestore(teacher));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -269,7 +307,7 @@ const rawDbService = {
       const docRef = doc(db, SETTINGS_COLL, 'global');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return docSnap.data() as SystemSettings;
+        return validateSystemSettings(docSnap.data());
       }
       return null;
     } catch (error) {
@@ -283,7 +321,7 @@ const rawDbService = {
       const { compressSettingsImages } = await import('../utils/imageCompressor');
       const compressed = await compressSettingsImages(settings);
       const docRef = doc(db, SETTINGS_COLL, 'global');
-      await setDoc(docRef, sanitizeData(compressed));
+      await setDoc(docRef, sanitizeForFirestore(compressed));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -296,7 +334,11 @@ const rawDbService = {
       const querySnapshot = await getDocs(q);
       const list: SystemLog[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as SystemLog);
+        try {
+          list.push(validateSystemLog(doc.data()));
+        } catch (valErr) {
+          console.warn(`Corrupted log doc ${doc.id}:`, valErr);
+        }
       });
       return list;
     } catch (error) {
@@ -308,7 +350,7 @@ const rawDbService = {
     const docPath = `${LOGS_COLL}/${log.id}`;
     try {
       const docRef = doc(db, LOGS_COLL, log.id);
-      await setDoc(docRef, sanitizeData(log));
+      await setDoc(docRef, sanitizeForFirestore(log));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -335,7 +377,14 @@ const rawDbService = {
       const querySnapshot = await getDocs(q);
       const list: UserAccount[] = [];
       querySnapshot.forEach((doc) => {
-        list.push(doc.data() as UserAccount);
+        try {
+          const user = validateUserAccount(doc.data());
+          // Ensure password field is never present in returned UserAccount objects
+          delete user.password;
+          list.push(user);
+        } catch (valErr) {
+          console.warn(`Corrupted user doc ${doc.id}:`, valErr);
+        }
       });
       return list;
     } catch (error) {
@@ -346,8 +395,10 @@ const rawDbService = {
   async saveUser(user: UserAccount): Promise<void> {
     const docPath = `${USERS_COLL}/${user.id}`;
     try {
+      const userToSave = { ...user };
+      delete userToSave.password; // Do not store passwords in Firestore document
       const docRef = doc(db, USERS_COLL, user.id);
-      await setDoc(docRef, sanitizeData(user));
+      await setDoc(docRef, sanitizeForFirestore(userToSave));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -432,31 +483,31 @@ function getLocalFallback(methodName: string): any {
   try {
     if (methodName === 'getStudents') {
       const v = localStorage.getItem('raport_students');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateStudent(x)) : [];
     }
     if (methodName === 'getSubjects') {
       const v = localStorage.getItem('raport_subjects');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateSubject(x)) : [];
     }
     if (methodName === 'getClassSubjects') {
       const v = localStorage.getItem('raport_class_subjects');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateClassSubject(x)) : [];
     }
     if (methodName === 'getTeachers') {
       const v = localStorage.getItem('raport_teachers');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateClassTeacher(x)) : [];
     }
     if (methodName === 'getSettings') {
       const v = localStorage.getItem('raport_settings');
-      return v ? JSON.parse(v) : null;
+      return v ? validateSystemSettings(JSON.parse(v)) : null;
     }
     if (methodName === 'getLogs') {
       const v = localStorage.getItem('raport_logs');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateSystemLog(x)) : [];
     }
     if (methodName === 'getUsers') {
       const v = localStorage.getItem('raport_users');
-      return v ? JSON.parse(v) : [];
+      return v ? JSON.parse(v).map((x: any) => validateUserAccount(x)) : [];
     }
   } catch (err) {
     console.error("Gagal membaca data cadangan lokal:", err);
@@ -501,7 +552,6 @@ export const dbService = new Proxy(rawDbService, {
               localStorage.setItem('raport_db_quota_error_msg', errMsg);
             }
             
-            // Return appropriate local fallbacks so the app doesn't freeze or block
             if (methodName === 'isDatabaseEmpty') {
               const st = localStorage.getItem('raport_students');
               return !(st && JSON.parse(st).length > 0);
@@ -509,12 +559,9 @@ export const dbService = new Proxy(rawDbService, {
             if (methodName.startsWith('get')) {
               return getLocalFallback(methodName);
             }
-            // Writes return void, so just return
             return;
           }
           
-          // Rethrow other errors (e.g., authentication) so they can be handled normally,
-          // but if they are generic Firestore errors that prevent basic loading, we also do fallback
           if (methodName.startsWith('get')) {
             console.warn("Firestore error during get, fallback to local:", errMsg);
             return getLocalFallback(methodName);
@@ -526,3 +573,4 @@ export const dbService = new Proxy(rawDbService, {
     return originalMethod;
   }
 }) as typeof rawDbService;
+
