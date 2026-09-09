@@ -9,12 +9,12 @@ interface SubjectManagerProps {
   userRole?: string;
   currentUser?: UserAccount | null;
   teachers?: ClassTeacher[];
-  onAddGlobalSubject: (nameId: string, nameAr: string, kkm: number, category?: 'A' | 'B' | 'C') => void;
-  onDeleteGlobalSubject: (id: number) => void;
-  onAddSubjectToClass: (kelas: string, subjectId: number) => void;
-  onRemoveSubjectFromClass: (kelas: string, subjectId: number) => void;
-  onClearClassSubjects?: (kelas: string) => void;
-  onClearGlobalSubjects?: () => void;
+  onAddGlobalSubject: (nameId: string, nameAr: string, kkm: number, category?: 'A' | 'B' | 'C') => Promise<void>;
+  onDeleteGlobalSubject: (id: number) => Promise<void>;
+  onAddSubjectToClass: (kelas: string, subjectId: number) => Promise<void>;
+  onRemoveSubjectFromClass: (kelas: string, subjectId: number) => Promise<void>;
+  onClearClassSubjects?: (kelas: string) => Promise<void>;
+  onClearGlobalSubjects?: () => Promise<void>;
 }
 
 export default function SubjectManager({
@@ -56,26 +56,26 @@ export default function SubjectManager({
     }
   }, [classOptions]);
 
-  const handleAddGlobal = (e: React.FormEvent) => {
+  const handleAddGlobal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameId || !nameAr) {
       alert("Lengkapi nama mata pelajaran dalam bahasa Indonesia dan Arab!");
       return;
     }
-    onAddGlobalSubject(nameId, nameAr, kkm, category);
+    await onAddGlobalSubject(nameId, nameAr, kkm, category);
     setNameId('');
     setNameAr('');
     setKkm(70);
     setCategory('A');
   };
 
-  const handleAddClassMapping = (e: React.FormEvent) => {
+  const handleAddClassMapping = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClass || selectedSubjectId === '') {
       alert("Harap pilih kelas dan mata pelajaran!");
       return;
     }
-    onAddSubjectToClass(selectedClass, Number(selectedSubjectId));
+    await onAddSubjectToClass(selectedClass, Number(selectedSubjectId));
     setSelectedSubjectId('');
   };
 

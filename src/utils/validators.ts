@@ -15,7 +15,7 @@ export function validateStudent(data: any): Student {
     izin: typeof data.izin === 'number' ? data.izin : 0,
     alpa: typeof data.alpa === 'number' ? data.alpa : 0,
     catatan: String(data.catatan || ''),
-    grades: data.grades && typeof data.grades === 'object' ? data.grades : {},
+    grades: Object.fromEntries(Object.entries(data.grades && typeof data.grades === 'object' && !Array.isArray(data.grades) ? data.grades : {}).filter(([key, value]) => /^\d+$/.test(key) && value !== '' && value !== null && (typeof value === 'number' || typeof value === 'string') && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100).map(([key, value]) => [key, Number(value)])),
     akhlaq: data.akhlaq || '',
     kerajinan: data.kerajinan || '',
     kedisiplinan: data.kedisiplinan || '',

@@ -1,7 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useCachedState } from '../hooks/useCachedState';
 import { useStudents } from '../hooks/useStudents';
 import { useSubjects } from '../hooks/useSubjects';
 import { useTeachers } from '../hooks/useTeachers';
@@ -9,7 +14,7 @@ import { useSettings } from '../hooks/useSettings';
 import { useLogs } from '../hooks/useLogs';
 import { UserAccount } from '../types';
 import { dbService } from '../lib/db';
-import { INITIAL_STUDENTS, INITIAL_SUBJECTS, INITIAL_TEACHERS, INITIAL_SETTINGS, INITIAL_LOGS, INITIAL_USERS, INITIAL_CLASSES } from '../utils/initialData';
+import { INITIAL_SETTINGS } from '../utils/initialData';
 
 interface AppContextType {
   // Navigation / UI
@@ -20,6 +25,8 @@ interface AppContextType {
   printStudentIds: string[];
   setPrintStudentIds: (ids: string[]) => void;
   isLoading: boolean;
+  loadError: string;
+  reloadData: () => void;
   migrationStatus: string;
   useCloudSync: boolean;
   setUseCloudSync: (val: boolean) => void;
@@ -68,12 +75,14 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [printStudentIds, setPrintStudentIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [migrationStatus, setMigrationStatus] = useState<string>('');
+  const migrationStatus = '';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const [useCloudSync, setUseCloudSyncState] = useState<boolean>(() => {
@@ -82,11 +91,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return val === null ? true : val === 'true';
   });
 
-  const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && localStorage.getItem('raport_db_quota_exhausted') === 'true';
-  });
+  const isQuotaExceeded = false;
 
-  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [users, setUsers] = useCachedState<UserAccount[]>('raport_users', []);
+  const { firebaseUser, isLoadingAuth } = useAuth();
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadData = () => setReloadKey((key) => key + 1);
 
   // Domain Hooks
   const studentHook = useStudents();
@@ -96,171 +107,78 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logsHook = useLogs();
 
   const setUseCloudSync = (val: boolean) => {
+    if (
+      val &&
+      !useCloudSync &&
+      !confirm(
+        'Beralih ke cloud akan memuat data dari server. Perubahan lokal tidak diunggah otomatis. Pastikan sudah mengunduh cadangan lokal sebelum melanjutkan.',
+      )
+    )
+      return;
+    localStorage.setItem('raport_use_cloud_sync', String(val));
     setUseCloudSyncState(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('raport_use_cloud_sync', String(val));
-    }
   };
 
-  // Initial Data Fetching and Seeding
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (isLoadingAuth) return;
+    let cancelled = false;
+    setActiveTab('dashboard');
+    setEditingStudentId(null);
+    setPrintStudentIds([]);
+    const load = async () => {
+      setIsLoading(true);
+      setLoadError('');
       try {
-        setIsLoading(true);
-
-        const storedSync = localStorage.getItem('raport_use_cloud_sync');
-        const isCloudSyncEnabled = storedSync === null ? true : storedSync === 'true';
-
-        if (!isCloudSyncEnabled || isQuotaExceeded) {
-          // Offline / LocalStorage Mode
-          const st = localStorage.getItem('raport_students');
-          if (st) studentHook.setStudents(JSON.parse(st));
-          else studentHook.setStudents(INITIAL_STUDENTS);
-
-          const sub = localStorage.getItem('raport_subjects');
-          if (sub) subjectHook.setSubjects(JSON.parse(sub));
-          else subjectHook.setSubjects(INITIAL_SUBJECTS);
-
-          const cs = localStorage.getItem('raport_class_subjects');
-          if (cs) subjectHook.setClassSubjects(JSON.parse(cs));
-          else {
-            const defMappings = INITIAL_CLASSES.flatMap(kelas => 
-              INITIAL_SUBJECTS.map(s => ({ kelas, subjectId: s.id }))
-            );
-            subjectHook.setClassSubjects(defMappings);
-          }
-
-          const tch = localStorage.getItem('raport_teachers');
-          if (tch) teacherHook.setTeachers(JSON.parse(tch));
-          else teacherHook.setTeachers(INITIAL_TEACHERS);
-
-          const set = localStorage.getItem('raport_settings');
-          if (set) settingsHook.setSettings(JSON.parse(set));
-          else settingsHook.setSettings(INITIAL_SETTINGS);
-
-          const lg = localStorage.getItem('raport_logs');
-          if (lg) logsHook.setLogs(JSON.parse(lg));
-          else logsHook.setLogs(INITIAL_LOGS);
-
-          const usr = localStorage.getItem('raport_users');
-          if (usr) setUsers(JSON.parse(usr));
-          else setUsers(INITIAL_USERS);
-
-          setIsLoading(false);
+        if (!firebaseUser) {
+          // No user directory requests or writes before authentication.
+          const publicSettings = await dbService.getSettings();
+          if (!cancelled && publicSettings)
+            settingsHook.setSettings(publicSettings);
           return;
         }
-
-        // --- Cloud Sync Mode ---
-        if (!user) {
-          // Unauthenticated: load public settings (school logo/name) and local user list
-          try {
-            const publicSettings = await dbService.getSettings();
-            if (publicSettings) settingsHook.setSettings(publicSettings);
-            else settingsHook.setSettings(INITIAL_SETTINGS);
-          } catch (err) {
-            console.warn("Public settings load warning:", err);
-            settingsHook.setSettings(INITIAL_SETTINGS);
-          }
-
-          const usr = localStorage.getItem('raport_users');
-          if (usr) setUsers(JSON.parse(usr));
-          else setUsers(INITIAL_USERS);
-
-          setIsLoading(false);
-          return;
-        }
-
-        // Authenticated user: load full datasets from Firestore
-        const empty = await dbService.isDatabaseEmpty();
-        if (empty) {
-          setMigrationStatus('Menginisialisasi data ke cloud database...');
-          const defMappings = INITIAL_CLASSES.flatMap(kelas => 
-            INITIAL_SUBJECTS.map(s => ({ kelas, subjectId: s.id }))
-          );
-
-          await dbService.uploadAllData({
-            students: INITIAL_STUDENTS,
-            subjects: INITIAL_SUBJECTS,
-            classSubjects: defMappings,
-            teachers: INITIAL_TEACHERS,
-            settings: INITIAL_SETTINGS,
-            users: INITIAL_USERS,
-            logs: INITIAL_LOGS
-          });
-
-          studentHook.setStudents(INITIAL_STUDENTS);
-          subjectHook.setSubjects(INITIAL_SUBJECTS);
-          subjectHook.setClassSubjects(defMappings);
-          teacherHook.setTeachers(INITIAL_TEACHERS);
-          settingsHook.setSettings(INITIAL_SETTINGS);
-          setUsers(INITIAL_USERS);
-          logsHook.setLogs(INITIAL_LOGS);
-        } else {
-          setMigrationStatus('Memuat data dari database cloud...');
-          const [fetchedStudents, fetchedSubjects, fetchedCS, fetchedTeachers, fetchedSettings, fetchedUsers, fetchedLogs] = await Promise.all([
+        const [students, subjects, mappings, teachers, settings, users, logs] =
+          await Promise.all([
             dbService.getStudents(),
             dbService.getSubjects(),
             dbService.getClassSubjects(),
             dbService.getTeachers(),
             dbService.getSettings(),
             dbService.getUsers(),
-            dbService.getLogs()
+            dbService.getLogs(),
           ]);
-
-          if (fetchedStudents && fetchedStudents.length > 0) studentHook.setStudents(fetchedStudents);
-          else studentHook.setStudents(INITIAL_STUDENTS);
-
-          if (fetchedSubjects && fetchedSubjects.length > 0) subjectHook.setSubjects(fetchedSubjects);
-          else subjectHook.setSubjects(INITIAL_SUBJECTS);
-
-          if (fetchedCS && fetchedCS.length > 0) subjectHook.setClassSubjects(fetchedCS);
-
-          if (fetchedTeachers && fetchedTeachers.length > 0) teacherHook.setTeachers(fetchedTeachers);
-          else teacherHook.setTeachers(INITIAL_TEACHERS);
-
-          if (fetchedSettings) settingsHook.setSettings(fetchedSettings);
-          else settingsHook.setSettings(INITIAL_SETTINGS);
-
-          if (fetchedUsers && fetchedUsers.length > 0) setUsers(fetchedUsers);
-          else setUsers(INITIAL_USERS);
-
-          if (fetchedLogs && fetchedLogs.length > 0) logsHook.setLogs(fetchedLogs);
-          else logsHook.setLogs(INITIAL_LOGS);
-        }
-      } catch (err) {
-        console.error("Gagal inisialisasi data:", err);
+        if (cancelled) return;
+        // Empty collections are valid. Never repopulate deleted data with demo records.
+        studentHook.setStudents(students);
+        subjectHook.setSubjects(subjects);
+        subjectHook.setClassSubjects(mappings);
+        teacherHook.setTeachers(teachers);
+        settingsHook.setSettings(settings || INITIAL_SETTINGS);
+        setUsers(users);
+        logsHook.setLogs(logs);
+      } catch (error) {
+        if (!cancelled && firebaseUser)
+          setLoadError(
+            error instanceof Error ? error.message : 'Gagal memuat data.',
+          );
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    });
-
-    return () => unsubscribe();
-  }, [isQuotaExceeded]);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser?.uid, isLoadingAuth, useCloudSync, reloadKey]);
 
   const saveUser = async (user: UserAccount) => {
-    setUsers(prev => {
-      const idx = prev.findIndex(u => u.id === user.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = user;
-        return next;
-      }
-      return [...prev, user];
-    });
-    try {
-      await dbService.saveUser(user);
-    } catch (err) {
-      console.error("Gagal menyimpan pengguna:", err);
-    }
+    await dbService.saveUser(user);
+    setUsers((previous) =>
+      Array.from(new Map([...previous, user].map((u) => [u.id, u])).values()),
+    );
   };
-
   const deleteUser = async (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    try {
-      await dbService.deleteUser(id);
-    } catch (err) {
-      console.error("Gagal menghapus pengguna:", err);
-    }
+    await dbService.deleteUser(id);
+    setUsers((previous) => previous.filter((u) => u.id !== id));
   };
 
   const refreshUsersFromCloud = async (): Promise<UserAccount[]> => {
@@ -273,33 +191,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   return (
-    <AppContext.Provider value={{
-      activeTab,
-      setActiveTab,
-      editingStudentId,
-      setEditingStudentId,
-      printStudentIds,
-      setPrintStudentIds,
-      isLoading,
-      migrationStatus,
-      useCloudSync,
-      setUseCloudSync,
-      isQuotaExceeded,
-      isMobileMenuOpen,
-      setIsMobileMenuOpen,
+    <AppContext.Provider
+      value={{
+        activeTab,
+        setActiveTab,
+        editingStudentId,
+        setEditingStudentId,
+        printStudentIds,
+        setPrintStudentIds,
+        isLoading,
+        loadError,
+        reloadData,
+        migrationStatus,
+        useCloudSync,
+        setUseCloudSync,
+        isQuotaExceeded,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
 
-      ...studentHook,
-      ...subjectHook,
-      ...teacherHook,
-      ...settingsHook,
-      ...logsHook,
+        ...studentHook,
+        ...subjectHook,
+        ...teacherHook,
+        ...settingsHook,
+        ...logsHook,
 
-      users,
-      setUsers,
-      saveUser,
-      deleteUser,
-      refreshUsersFromCloud
-    }}>
+        users,
+        setUsers,
+        saveUser,
+        deleteUser,
+        refreshUsersFromCloud,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

@@ -6,7 +6,7 @@ const defaultLogo = "/logo.svg";
 
 interface SettingsManagerProps {
   settings: SystemSettings;
-  onSaveSettings: (updatedSettings: SystemSettings) => void;
+  onSaveSettings: (updatedSettings: SystemSettings) => Promise<void>;
   students: Student[];
   subjects: Subject[];
   classSubjects: ClassSubject[];
@@ -50,6 +50,8 @@ export default function SettingsManager({
   const [ttdPengasuh, setTtdPengasuh] = useState(settings.ttdPengasuh || '');
   const [ttdKepala, setTtdKepala] = useState(settings.ttdKepala || '');
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
   // Handle file reading to base64 with immediate optional background removal and compression
@@ -84,10 +86,16 @@ export default function SettingsManager({
     reader.readAsDataURL(file);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    onSaveSettings({
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveError('');
+    setFeedbackMsg('');
+    try {
+    await onSaveSettings({
+      ...settings,
       namaPengasuh,
       namaKepala,
       tempatRaport,
@@ -102,10 +110,13 @@ export default function SettingsManager({
 
     setFeedbackMsg("Pengaturan berhasil disimpan ke dalam sistem!");
     setTimeout(() => setFeedbackMsg(''), 4000);
+    } catch (error) { setSaveError(error instanceof Error ? error.message : 'Pengaturan belum tersimpan.'); }
+    finally { setIsSaving(false); }
   };
 
   return (
     <div className="space-y-6">
+      {saveError && <div className="form-error" role="alert">{saveError}</div>}
       {/* Title Header */}
       <div>
         <h2 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
@@ -417,7 +428,7 @@ export default function SettingsManager({
         {/* Submit button bar */}
         <div className="flex justify-end pt-2 border-t border-slate-100">
           <button
-            type="submit"
+            type="submit" disabled={isSaving}
             className="px-10 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold rounded-xl shadow-lg transition active:scale-95 text-sm"
           >
             Simpan Semua Pengaturan & Berkas
@@ -564,6 +575,8 @@ export default function SettingsManager({
                 };
 
                 await onAdvanceSemester(updatedSettings, enrollStudents);
+                setSemester(updatedSettings.semester);
+                setTahunAjaran(updatedSettings.tahunAjaran);
                 alert(`Sistem berhasil dialihkan ke Semester ${nextSem} Tahun Ajaran ${nextTA}!`);
               }}
               className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-indigo-700 hover:bg-indigo-650 text-white font-extrabold rounded-lg shadow-sm transition active:scale-95 text-xs cursor-pointer"
@@ -668,6 +681,7 @@ export default function SettingsManager({
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                URL.revokeObjectURL(url);
               }}
               className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold rounded-lg shadow-sm transition active:scale-95 text-xs cursor-pointer"
             >
@@ -683,7 +697,7 @@ export default function SettingsManager({
               Impor & Pulihkan Cadangan
             </h4>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Unggah file cadangan <code className="font-mono bg-white px-1 py-0.5 rounded border border-amber-200">.json</code> untuk memulihkan seluruh data sistem. <strong className="text-red-700 font-bold">Peringatan:</strong> Proses ini akan menimpa seluruh data yang saat ini ada di sistem dan database cloud!
+              Unggah file cadangan <code className="font-mono bg-white px-1 py-0.5 rounded border border-amber-200">.json</code> untuk memulihkan data akademik. <strong className="text-red-700 font-bold">Peringatan:</strong> Santri, pelajaran, dan wali kelas dengan ID sama diperbarui. Pemetaan kelas dan pengaturan diganti. Akun login dan log lama tidak dipulihkan.
             </p>
             
             <div className="flex items-center gap-2">
@@ -713,14 +727,15 @@ export default function SettingsManager({
                         `• Jumlah Guru: ${userCount}\n` +
                         `• Jumlah Mapel: ${subjectCount}\n` +
                         `• Tanggal Cadangan: ${new Date(parsed.backupDate).toLocaleString()}\n\n` +
-                        `Apakah Anda yakin ingin memulihkan data ini? Semua data saat ini di local & cloud akan ditimpa total!`
+                        `Apakah Anda yakin ingin memulihkan data ini? Data akademik dengan ID yang sama akan diperbarui, pemetaan kelas dan pengaturan akan diganti. Akun login tidak dipulihkan.`
                       );
 
                       if (confirmed) {
                         await onRestoreData(parsed);
+                        alert("Data akademik berhasil dipulihkan.");
                       }
                     } catch (err) {
-                      alert("Gagal membaca berkas cadangan. Pastikan format berkas .json valid.");
+                      alert(err instanceof Error ? err.message : 'Pemulihan data gagal. Periksa format berkas dan koneksi.');
                     }
                   };
                   reader.readAsText(file);

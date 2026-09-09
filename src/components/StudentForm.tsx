@@ -9,7 +9,7 @@ interface StudentFormProps {
   availableClasses: string[];
   currentTahunAjaran: string;
   currentSemester: 'Ganjil' | 'Genap';
-  onSave: (studentData: Omit<Student, 'id'> & { id?: string }) => void;
+  onSave: (studentData: Omit<Student, 'id'> & { id?: string }) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -23,6 +23,8 @@ export default function StudentForm({
   onSave,
   onCancel
 }: StudentFormProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   // 1. Student Identity States
   const [nama, setNama] = useState(student?.nama || '');
   const [nis, setNis] = useState(student?.nis || '');
@@ -56,48 +58,38 @@ export default function StudentForm({
   const [kerapihan, setKerapihan] = useState<'A' | 'B' | 'C' | 'D' | ''>(student?.kerapihan || 'B');
 
   // 3. Dynamic Subject Grades state
-  const [grades, setGrades] = useState<Record<number, number>>({});
+  const [grades, setGrades] = useState<Record<number, number>>(student?.grades || {});
 
   // Filter subjects assigned to the selected class
   const classSubjectIds = classSubjects
     .filter(cs => cs.kelas === kelas)
     .map(cs => cs.subjectId);
 
-  // If there are no class subject mappings, use all subjects as fallback
-  const activeSubjects = classSubjectIds.length > 0 
-    ? subjects.filter(sub => classSubjectIds.includes(sub.id))
-    : subjects;
-
-  // Initialize grades from student if they match the active subjects
-  useEffect(() => {
-    const initialGrades: Record<number, number> = {};
-    activeSubjects.forEach(sub => {
-      // populate with student score or default to 0
-      initialGrades[sub.id] = student?.grades?.[sub.id] !== undefined ? student.grades[sub.id] : 0;
+  const activeSubjects = subjects.filter(sub => classSubjectIds.includes(sub.id));
+  const handleGradeChange = (subjectId: number, value: string) => {
+    setGrades(previous => {
+      const next = { ...previous };
+      if (value === '') delete next[subjectId];
+      else if (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100) next[subjectId] = Number(value);
+      return next;
     });
-    setGrades(initialGrades);
-  }, [kelas, student, subjects, classSubjects]);
-
-  const handleGradeChange = (subjectId: number, value: number) => {
-    // clamp between 0 and 100
-    const clampedValue = Math.min(100, Math.max(0, value));
-    setGrades(prev => ({
-      ...prev,
-      [subjectId]: clampedValue
-    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nama || !nis || !kelas) {
+    if (isSaving) return;
+    if (!nama.trim() || !nis.trim() || !kelas) {
       alert("Harap lengkapi semua data identitas santri!");
       return;
     }
 
-    onSave({
+    setIsSaving(true);
+    setSaveError('');
+    try {
+    await onSave({
       id: student?.id, // keep id for edits
-      nama,
-      nis,
+      nama: nama.trim(),
+      nis: nis.trim(),
       kelas,
       semester,
       tahunAjaran,
@@ -122,6 +114,9 @@ export default function StudentForm({
       foto,
       namaArab
     });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Data belum tersimpan. Coba lagi.');
+    } finally { setIsSaving(false); }
   };
 
   return (
@@ -132,7 +127,7 @@ export default function StudentForm({
           onClick={onCancel}
           className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-label="Kembali ke daftar santri" />
         </button>
         <div>
           <h2 className="text-xl font-extrabold text-gray-900">
@@ -492,8 +487,8 @@ export default function StudentForm({
                       required
                       min="0"
                       max="100"
-                      value={grades[sub.id] !== undefined ? grades[sub.id] : 0}
-                      onChange={(e) => handleGradeChange(sub.id, parseInt(e.target.value) || 0)}
+                      value={grades[sub.id] ?? ''}
+                      onChange={(e) => handleGradeChange(sub.id, e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 text-center text-base font-extrabold text-emerald-950 focus:ring-2 focus:ring-emerald-500"
                     />
                   </div>
@@ -622,7 +617,7 @@ export default function StudentForm({
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
               <label className="text-xs font-bold text-slate-500 uppercase">Catatan Wali Kelas</label>
-              <HelpCircle size={12} className="text-slate-400" title="Komentar atau nasihat akademik santri" />
+              <HelpCircle size={12} className="text-slate-400" />
             </div>
             <textarea
               rows={3}
@@ -634,6 +629,7 @@ export default function StudentForm({
           </div>
         </div>
 
+        {saveError && <div className="form-error" role="alert">{saveError}</div>}
         {/* Submit Bar */}
         <div className="flex justify-end gap-3 pt-2">
           <button
@@ -645,9 +641,10 @@ export default function StudentForm({
           </button>
           <button
             type="submit"
+            disabled={isSaving}
             className="px-8 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm shadow-md transition active:scale-95"
           >
-            Simpan Data Raport
+            {isSaving ? 'Menyimpan...' : 'Simpan Data Raport'}
           </button>
         </div>
       </form>

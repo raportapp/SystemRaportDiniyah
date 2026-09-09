@@ -5,9 +5,9 @@ import { ClassTeacher } from '../types';
 interface TeacherManagerProps {
   teachers: ClassTeacher[];
   allClasses: string[];
-  onAddTeacher: (kelas: string, waliKelas: string) => void;
-  onUpdateTeacher: (kelas: string, waliKelas: string) => void;
-  onDeleteTeacher: (kelas: string) => void;
+  onAddTeacher: (kelas: string, waliKelas: string) => Promise<void>;
+  onUpdateTeacher: (kelas: string, waliKelas: string) => Promise<void>;
+  onDeleteTeacher: (kelas: string) => Promise<void>;
 }
 
 export default function TeacherManager({
@@ -22,13 +22,13 @@ export default function TeacherManager({
   const [editingKelas, setEditingKelas] = useState<string | null>(null);
   const [editingWali, setEditingWali] = useState('');
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKelas || !newWali) {
       alert("Harap lengkapi nama kelas dan nama wali kelas!");
       return;
     }
-    onAddTeacher(newKelas, newWali);
+    await onAddTeacher(newKelas, newWali);
     setNewKelas('');
     setNewWali('');
   };
@@ -38,12 +38,12 @@ export default function TeacherManager({
     setEditingWali(item.waliKelas);
   };
 
-  const handleUpdate = (kelasName: string) => {
+  const handleUpdate = async (kelasName: string) => {
     if (!editingWali) {
       alert("Nama wali kelas tidak boleh kosong!");
       return;
     }
-    onUpdateTeacher(kelasName, editingWali);
+    await onUpdateTeacher(kelasName, editingWali);
     setEditingKelas(null);
     setEditingWali('');
   };

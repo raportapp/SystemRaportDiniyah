@@ -5,10 +5,10 @@ import { UserAccount } from '../types';
 interface UserManagerProps {
   users: UserAccount[];
   currentUser: UserAccount;
-  onAddUser: (fullname: string, username: string, role: 'admin' | 'teacher', password?: string, email?: string) => void;
-  onDeleteUser: (id: string) => void;
-  onUpdatePassword: (id: string, newPassword: string) => void;
-  onUpdateEmail: (id: string, email: string) => void;
+  onAddUser: (fullname: string, username: string, role: 'admin' | 'teacher', password?: string, email?: string) => Promise<void>;
+  onDeleteUser: (id: string) => Promise<void>;
+  onUpdatePassword: (id: string, newPassword: string) => Promise<void>;
+  onUpdateEmail: (id: string, email: string) => Promise<void>;
   useCloudSync?: boolean;
   onSyncAllUsersToCloud?: () => Promise<void>;
 }
@@ -33,14 +33,14 @@ export default function UserManager({
   const [editingEmailUserId, setEditingEmailUserId] = useState<string | null>(null);
   const [tempEmail, setTempEmail] = useState('');
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullname || !username || !password) {
       alert("Harap lengkapi seluruh field!");
       return;
     }
 
-    onAddUser(fullname, username, role, password, email.trim() || undefined);
+    await onAddUser(fullname, username, role, password, email.trim() || undefined);
     setFullname('');
     setUsername('');
     setPassword('');
@@ -82,7 +82,7 @@ export default function UserManager({
           <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
             {useCloudSync 
               ? "Akun guru yang dibuat di sini akan langsung dikirim ke Cloud agar Wali Kelas lain bisa langsung masuk dari HP atau laptop mereka masing-masing. Jika ada akun yang belum terdeteksi oleh guru, gunakan tombol sinkronisasi manual di sebelah kanan."
-              : "Akun guru yang Anda buat dalam mode ini HANYA tersimpan di dalam browser komputer/perangkat ini. Guru lain tidak akan bisa login dari HP/perangkat mereka sendiri sebelum Anda mengaktifkan 'Sinkronisasi Cloud (Online)' di tab Pengaturan Lembaga."}
+              : "Pembuatan, penghapusan, dan reset password akun tetap membutuhkan koneksi internet dan layanan akun Firebase."}
           </p>
         </div>
 
@@ -148,7 +148,7 @@ export default function UserManager({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 block">Email Google (Opsional untuk Cloud Sync)</label>
+              <label className="text-xs font-bold text-slate-500 block">Email login (opsional)</label>
               <input
                 type="email"
                 value={email}
@@ -156,7 +156,7 @@ export default function UserManager({
                 placeholder="ustadz@gmail.com"
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-gray-800 outline-none focus:ring-2 focus:ring-emerald-500 font-sans"
               />
-              <p className="text-[10px] text-indigo-600 font-medium">Diperlukan agar guru bisa sinkronisasi ke cloud via Google Sign-In.</p>
+              <p className="text-[10px] text-indigo-600 font-medium">Jika diisi, gunakan email ini untuk masuk. Jika kosong, gunakan username.</p>
             </div>
 
             <div className="space-y-1.5">
@@ -222,7 +222,7 @@ export default function UserManager({
                             <div className="text-[10px] text-indigo-600 font-bold flex items-center gap-1 mt-0.5">
                               <span>📧 Google: {u.email}</span>
                               <button 
-                                onClick={() => {
+                                onClick={async () => {
                                   setEditingEmailUserId(u.id);
                                   setTempEmail(u.email || '');
                                 }} 
@@ -235,7 +235,7 @@ export default function UserManager({
                             <div className="text-[10px] text-amber-650 font-bold flex items-center gap-1 mt-0.5">
                               <span>⚠️ Belum Terhubung Google</span>
                               <button 
-                                onClick={() => {
+                                onClick={async () => {
                                   setEditingEmailUserId(u.id);
                                   setTempEmail('');
                                 }} 
@@ -255,8 +255,8 @@ export default function UserManager({
                                 placeholder="nama@gmail.com"
                               />
                               <button
-                                onClick={() => {
-                                  onUpdateEmail(u.id, tempEmail.trim());
+                                onClick={async () => {
+                                  await onUpdateEmail(u.id, tempEmail.trim());
                                   setEditingEmailUserId(null);
                                 }}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[9px] px-1.5 py-0.5 rounded transition shrink-0"
@@ -286,12 +286,12 @@ export default function UserManager({
                             placeholder="Password Baru"
                           />
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (!tempPassword.trim() || tempPassword.trim().length < 6) {
                                 alert("Password minimal 6 karakter!");
                                 return;
                               }
-                              onUpdatePassword(u.id, tempPassword.trim());
+                              await onUpdatePassword(u.id, tempPassword.trim());
                               setEditingUserId(null);
                               setTempPassword('');
                             }}
@@ -300,7 +300,7 @@ export default function UserManager({
                             Simpan
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               setEditingUserId(null);
                               setTempPassword('');
                             }}
@@ -311,7 +311,7 @@ export default function UserManager({
                         </div>
                       ) : (
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setEditingUserId(u.id);
                             setTempPassword('');
                           }}
