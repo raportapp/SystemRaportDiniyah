@@ -8,7 +8,7 @@ interface MyProfileProps {
   teachers: ClassTeacher[];
   students: Student[];
   onUpdateProfile: (updatedUser: UserAccount) => Promise<void>;
-  onUpdatePassword: (id: string, newPassword: string) => void;
+  onUpdatePassword: (id: string, newPassword: string, currentPassword: string) => Promise<void>;
 }
 
 export default function MyProfile({
@@ -29,6 +29,7 @@ export default function MyProfile({
   const [photo, setPhoto] = useState(currentUser.photo || '');
 
   // Local state for password change
+  const [changingPassword, setChangingPassword] = useState(false);
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -94,7 +95,7 @@ export default function MyProfile({
     }
   };
 
-  const handleChangePasswordSubmit = (e: FormEvent) => {
+  const handleChangePasswordSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setPasswordStatus(null);
 
@@ -108,17 +109,19 @@ export default function MyProfile({
       return;
     }
 
-    // Check current password if it exists in the system
-    if (currentUser.password && currentPass !== currentUser.password) {
-      setPasswordStatus({ success: false, message: "Password saat ini salah!" });
+    if (changingPassword) return;
+    if (!currentPass || newPass.length < 6) {
+      setPasswordStatus({ success: false, message: 'Isi password saat ini dan password baru minimal 6 karakter.' });
       return;
     }
-
-    onUpdatePassword(currentUser.id, newPass);
-    setPasswordStatus({ success: true, message: "Password berhasil diperbarui!" });
-    setCurrentPass('');
-    setNewPass('');
-    setConfirmPass('');
+    setChangingPassword(true);
+    try {
+      await onUpdatePassword(currentUser.id, newPass, currentPass);
+      setPasswordStatus({ success: true, message: 'Password berhasil diperbarui!' });
+      setCurrentPass(''); setNewPass(''); setConfirmPass('');
+    } catch {
+      setPasswordStatus({ success: false, message: 'Password belum berubah. Periksa password saat ini dan koneksi, atau masuk kembali.' });
+    } finally { setChangingPassword(false); }
   };
 
   return (
@@ -372,7 +375,7 @@ export default function MyProfile({
               <div className="md:col-span-2 flex justify-end pt-2">
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || changingPassword}
                   className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition active:scale-95 text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isSaving ? (

@@ -11,7 +11,8 @@ interface BulkGradeEntryProps {
   userRole: string;
   activeSemester: 'Ganjil' | 'Genap';
   activeTahunAjaran: string;
-  onBulkSaveStudents: (updatedStudents: Student[]) => void;
+  onBulkSaveStudents: (updatedStudents: Student[]) => Promise<void>;
+  locked?: boolean;
   onNavigate: (tab: string) => void;
 }
 
@@ -25,6 +26,7 @@ export default function BulkGradeEntry({
   activeSemester,
   activeTahunAjaran,
   onBulkSaveStudents,
+  locked = false,
   onNavigate
 }: BulkGradeEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -33,6 +35,8 @@ export default function BulkGradeEntry({
   const [bulkVal, setBulkVal] = useState<string>('');
   const [showSavedToast, setShowSavedToast] = useState(false);
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   // References for keyboard navigation
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -42,14 +46,14 @@ export default function BulkGradeEntry({
     .map(t => t.kelas);
 
   // Filter students in the active term and selected class
-  const activeTermStudents = students.filter(st => 
-    st.semester === activeSemester && 
+  const activeTermStudents = students.filter(st =>
+    st.semester === activeSemester &&
     st.tahunAjaran === activeTahunAjaran &&
     (selectedClass ? st.kelas === selectedClass : true)
   );
 
-  const availableClasses = userRole === 'admin' 
-    ? Array.from(new Set(teachers.map(t => t.kelas))) 
+  const availableClasses = userRole === 'admin'
+    ? Array.from(new Set([...teachers.map(t => t.kelas), ...students.filter(s => s.semester === activeSemester && s.tahunAjaran === activeTahunAjaran).map(s => s.kelas)]))
     : managedClasses;
 
   // Filter subjects linked to the selected class
@@ -70,7 +74,7 @@ export default function BulkGradeEntry({
     } else {
       setGradesState({});
     }
-  }, [selectedClass, selectedSubjectId, students]);
+  }, [selectedClass, selectedSubjectId, students, activeSemester, activeTahunAjaran]);
 
   const handleGradeChange = (studentId: string, val: string) => {
     // Basic formatting constraint to only accept digits or empty
@@ -128,16 +132,19 @@ export default function BulkGradeEntry({
     }
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
+    if (saving || locked) return;
+    setShowSavedToast(false);
+    setSaveError('');
     if (!selectedClass || selectedSubjectId === '') {
       alert("Pilih Kelas dan Mata Pelajaran terlebih dahulu!");
       return;
     }
 
     const subjectIdNum = Number(selectedSubjectId);
-    
+
     // Construct updated students array
-    const updatedStudentsList = students.map(st => {
+    const updatedStudentsList = activeTermStudents.map(st => {
       if (st.semester === activeSemester && st.tahunAjaran === activeTahunAjaran && st.kelas === selectedClass) {
         const scoreStr = gradesState[st.id];
         const newGrades = { ...st.grades };
@@ -154,15 +161,25 @@ export default function BulkGradeEntry({
       return st;
     });
 
-    onBulkSaveStudents(updatedStudentsList);
-    setShowSavedToast(true);
-    setTimeout(() => setShowSavedToast(false), 3000);
+    if (!availableClasses.includes(selectedClass) || !availableSubjects.some(s => s.id === subjectIdNum)) {
+      setSaveError('Kelas atau mata pelajaran tidak tersedia untuk akun ini.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onBulkSaveStudents(updatedStudentsList);
+      setShowSavedToast(true);
+    } catch (error) { setSaveError(error instanceof Error ? error.message : 'Nilai belum tersimpan.'); }
+    finally { setSaving(false); }
   };
 
   const activeSubject = subjects.find(s => s.id === Number(selectedSubjectId));
 
   return (
     <div className="space-y-6">
+      {locked && <div className="notice-banner" role="status">Pengisian nilai dikunci oleh administrator.</div>}
+      {saveError && <div className="form-error" role="alert">{saveError}</div>}
+      <fieldset disabled={locked || saving} className="space-y-6 min-w-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
@@ -183,6 +200,7 @@ export default function BulkGradeEntry({
         <div className="md:col-span-4 space-y-2">
           <label className="text-xs font-extrabold text-slate-600 uppercase tracking-wider block">1. Pilih Kelas</label>
           <select
+            aria-label="Pilih kelas"
             value={selectedClass}
             onChange={(e) => {
               setSelectedClass(e.target.value);
@@ -200,6 +218,7 @@ export default function BulkGradeEntry({
         <div className="md:col-span-4 space-y-2">
           <label className="text-xs font-extrabold text-slate-600 uppercase tracking-wider block">2. Pilih Mata Pelajaran</label>
           <select
+            aria-label="Pilih mata pelajaran"
             value={selectedSubjectId}
             disabled={!selectedClass}
             onChange={(e) => setSelectedSubjectId(e.target.value === '' ? '' : Number(e.target.value))}
@@ -310,7 +329,7 @@ export default function BulkGradeEntry({
                             onKeyDown={(e) => handleKeyDown(e, index, st.id)}
                             placeholder="Belum diisi"
                             className={`w-28 text-center px-3 py-1.5 rounded-lg border font-black text-sm outline-none transition focus:ring-2 ${
-                              !hasValue 
+                              !hasValue
                                 ? 'bg-slate-50 border-slate-250 text-slate-800 focus:bg-white focus:border-emerald-600 focus:ring-emerald-100'
                                 : isPassed
                                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800 focus:bg-white focus:border-emerald-600 focus:ring-emerald-100'
@@ -374,6 +393,7 @@ export default function BulkGradeEntry({
           </div>
         </div>
       )}
+      </fieldset>
     </div>
   );
 }

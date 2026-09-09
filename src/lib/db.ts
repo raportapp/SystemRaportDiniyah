@@ -9,7 +9,8 @@ import {
   writeBatch,
   query,
   orderBy,
-  limit
+  limit,
+  where
 } from 'firebase/firestore';
 import { Student, Subject, ClassSubject, ClassTeacher, SystemSettings, SystemLog, UserAccount } from '../types';
 import {
@@ -58,39 +59,19 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | null;
-    email: string | null;
-    emailVerified: boolean | null;
-    isAnonymous: boolean | null;
-  }
-}
-
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
-  const currentUser = auth.currentUser;
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: currentUser?.uid || null,
-      email: currentUser?.email || null,
-      emailVerified: currentUser?.emailVerified || null,
-      isAnonymous: currentUser?.isAnonymous || null
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error Details: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  const code = (error as { code?: string })?.code || '';
+  const message = code.includes('permission-denied')
+    ? 'Akses ditolak. Pastikan akun Anda memiliki izin untuk tindakan ini.'
+    : code.includes('resource-exhausted')
+      ? 'Kuota database habis. Data belum disimpan ke cloud. Coba lagi setelah kuota tersedia.'
+      : 'Database tidak dapat diakses. Periksa koneksi Anda lalu coba lagi.';
+  console.error('Database operation failed', { code, operationType, path });
+  throw new Error(message, { cause: error });
 }
 
 export const isCloudSyncActive = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const quotaExceeded = localStorage.getItem('raport_db_quota_exhausted') === 'true';
-  if (quotaExceeded) return false;
   const val = localStorage.getItem('raport_use_cloud_sync');
   return val === null ? true : val === 'true';
 };
@@ -99,12 +80,12 @@ const rawDbService = {
   // --- STUDENTS ---
   async getStudents(): Promise<Student[]> {
     try {
-      const q = query(collection(db, STUDENTS_COLL), limit(300));
+      const q = query(collection(db, STUDENTS_COLL));
       const querySnapshot = await getDocs(q);
       const list: Student[] = [];
       querySnapshot.forEach((doc) => {
         try {
-          list.push(validateStudent(doc.data()));
+          list.push(validateStudent({ ...doc.data(), id: doc.id }));
         } catch (valErr) {
           console.warn(`Corrupted student doc ${doc.id}:`, valErr);
         }
@@ -127,12 +108,13 @@ const rawDbService = {
 
   async saveStudentsBatch(studentsList: Student[]): Promise<void> {
     try {
-      const batch = writeBatch(db);
-      for (const st of studentsList) {
-        const docRef = doc(db, STUDENTS_COLL, st.id);
-        batch.set(docRef, sanitizeForFirestore(st));
+      for (let i = 0; i < studentsList.length; i += 400) {
+        const batch = writeBatch(db);
+        for (const st of studentsList.slice(i, i + 400)) {
+          batch.set(doc(db, STUDENTS_COLL, st.id), sanitizeForFirestore(st));
+        }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, STUDENTS_COLL);
     }
@@ -198,8 +180,13 @@ const rawDbService = {
   async deleteSubject(id: number): Promise<void> {
     const docPath = `${SUBJECTS_COLL}/sub-${id}`;
     try {
-      const docRef = doc(db, SUBJECTS_COLL, `sub-${id}`);
-      await deleteDoc(docRef);
+      const mappings = await getDocs(query(collection(db, CLASSSUBJECTS_COLL), where('subjectId', '==', id)));
+      for (let i = 0; i < mappings.docs.length; i += 400) {
+        const batch = writeBatch(db);
+        mappings.docs.slice(i, i + 400).forEach(mapping => batch.delete(mapping.ref));
+        await batch.commit();
+      }
+      await deleteDoc(doc(db, SUBJECTS_COLL, `sub-${id}`));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, docPath);
     }
@@ -226,13 +213,17 @@ const rawDbService = {
 
   async saveClassSubjects(mappings: ClassSubject[]): Promise<void> {
     try {
-      const batch = writeBatch(db);
-      for (const m of mappings) {
-        const docId = `${m.kelas.replace(/[^a-zA-Z0-9]/g, '_')}_${m.subjectId}`;
-        const docRef = doc(db, CLASSSUBJECTS_COLL, docId);
-        batch.set(docRef, sanitizeForFirestore(m));
+      const existing = await getDocs(collection(db, CLASSSUBJECTS_COLL));
+      const desired = new Map(mappings.map(m => [`${m.kelas.replace(/[^a-zA-Z0-9]/g, '_')}_${m.subjectId}`, m]));
+      const operations = [
+        ...existing.docs.filter(d => !desired.has(d.id)).map(d => ({ ref: d.ref, data: null as ClassSubject | null })),
+        ...Array.from(desired, ([id, data]) => ({ ref: doc(db, CLASSSUBJECTS_COLL, id), data }))
+      ];
+      for (let i = 0; i < operations.length; i += 400) {
+        const batch = writeBatch(db);
+        operations.slice(i, i + 400).forEach(op => op.data ? batch.set(op.ref, sanitizeForFirestore(op.data)) : batch.delete(op.ref));
+        await batch.commit();
       }
-      await batch.commit();
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, CLASSSUBJECTS_COLL);
     }
@@ -318,10 +309,8 @@ const rawDbService = {
   async saveSettings(settings: SystemSettings): Promise<void> {
     const docPath = `${SETTINGS_COLL}/global`;
     try {
-      const { compressSettingsImages } = await import('../utils/imageCompressor');
-      const compressed = await compressSettingsImages(settings);
       const docRef = doc(db, SETTINGS_COLL, 'global');
-      await setDoc(docRef, sanitizeForFirestore(compressed));
+      await setDoc(docRef, sanitizeForFirestore(settings));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, docPath);
     }
@@ -517,60 +506,26 @@ function getLocalFallback(methodName: string): any {
 
 export const dbService = new Proxy(rawDbService, {
   get(target, prop, receiver) {
-    const originalMethod = Reflect.get(target, prop, receiver);
-    if (typeof originalMethod === 'function') {
-      return async function (...args: any[]) {
-        const methodName = String(prop);
-        const cloudActive = isCloudSyncActive();
-        
-        // If cloud sync is not active, run completely in offline/local mode
-        if (!cloudActive) {
-          if (methodName === 'isDatabaseEmpty') {
-            const st = localStorage.getItem('raport_students');
-            return !(st && JSON.parse(st).length > 0);
-          }
-          if (methodName.startsWith('get')) {
-            return getLocalFallback(methodName);
-          }
-          return;
-        }
-
-        try {
-          return await originalMethod.apply(target, args);
-        } catch (error: any) {
-          const errMsg = error?.message || String(error);
-          const isQuota = errMsg.toLowerCase().includes('quota') || 
-                          errMsg.toLowerCase().includes('exhausted') || 
-                          errMsg.toLowerCase().includes('limit exceeded') ||
-                          errMsg.toLowerCase().includes('resource-exhausted') ||
-                          errMsg.toLowerCase().includes('backoff delay');
-          
-          if (isQuota) {
-            console.warn("Firestore Quota Limit detected! Falling back to localStorage dynamically.");
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('raport_db_quota_exhausted', 'true');
-              localStorage.setItem('raport_db_quota_error_msg', errMsg);
-            }
-            
-            if (methodName === 'isDatabaseEmpty') {
-              const st = localStorage.getItem('raport_students');
-              return !(st && JSON.parse(st).length > 0);
-            }
-            if (methodName.startsWith('get')) {
-              return getLocalFallback(methodName);
-            }
-            return;
-          }
-          
-          if (methodName.startsWith('get')) {
-            console.warn("Firestore error during get, fallback to local:", errMsg);
-            return getLocalFallback(methodName);
-          }
-          throw error;
-        }
-      };
-    }
-    return originalMethod;
+    const method = Reflect.get(target, prop, receiver);
+    if (typeof method !== 'function') return method;
+    return async (...args: unknown[]) => {
+      const name = String(prop);
+      if (!isCloudSyncActive()) {
+        if (name === 'isDatabaseEmpty') return false;
+        if (name.startsWith('get')) return getLocalFallback(name);
+        // Domain hooks commit the local cache after this returns successfully.
+        return;
+      }
+      if (!name.startsWith('get') && name !== 'isDatabaseEmpty') return method.apply(target, args);
+      let timer: ReturnType<typeof setTimeout>;
+      try {
+        return await Promise.race([
+          method.apply(target, args),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Koneksi database terlalu lama. Periksa jaringan dan coba lagi.')), 12000); })
+        ]);
+      } finally {
+        clearTimeout(timer!);
+      }
+    };
   }
 }) as typeof rawDbService;
-

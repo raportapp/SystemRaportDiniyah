@@ -240,9 +240,7 @@ export default function RaportPrint({
           const classSubjectIds = classSubjects
             .filter(cs => cs.kelas === st.kelas)
             .map(cs => cs.subjectId);
-          const classActiveSubjects = classSubjectIds.length > 0
-            ? subjects.filter(sub => classSubjectIds.includes(sub.id))
-            : subjects;
+          const classActiveSubjects = subjects.filter(sub => classSubjectIds.includes(sub.id));
 
           const subjectsCatA = classActiveSubjects.filter(sub => (sub.category || 'A') === 'A');
           const subjectsCatB = classActiveSubjects.filter(sub => sub.category === 'B');
@@ -250,16 +248,16 @@ export default function RaportPrint({
 
           let totalScore = 0;
           const buildGradeRow = (sub: Subject, indexInCategory: number) => {
-            const score = st.grades[sub.id] !== undefined ? st.grades[sub.id] : 0;
-            totalScore += score;
+            const score = st.grades[sub.id];
+            totalScore += score ?? 0;
             return {
               no: indexInCategory + 1,
               nameId: sub.nameId,
               nameAr: sub.nameAr,
               kkm: sub.kkm,
-              score,
-              spelledId: terbilangIndo(score),
-              spelledAr: terbilangArab(score)
+              score: score ?? '-',
+              spelledId: score === undefined ? '-' : terbilangIndo(score),
+              spelledAr: score === undefined ? '-' : terbilangArab(score)
             };
           };
 
@@ -290,7 +288,7 @@ export default function RaportPrint({
           const sigImgHeightCls = isUltraCompact ? "h-10 print:h-10" : isCompact ? "h-12 print:h-12" : "h-14 print:h-14";
 
           // Calculate class ranking for this student using the classActiveSubjects
-          const classStudents = students.filter(s => s.kelas === st.kelas);
+          const classStudents = students.filter(s => s.kelas === st.kelas && s.semester === st.semester && s.tahunAjaran === st.tahunAjaran);
           const studentAvgs = classStudents.map(s => {
             const scores = classActiveSubjects.map(sub => s.grades[sub.id] !== undefined ? s.grades[sub.id] : 0);
             const total = scores.reduce((sum, score) => sum + score, 0);
@@ -616,7 +614,7 @@ export default function RaportPrint({
                           <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-extrabold text-slate-950 uppercase`}>: {st.nama}</td>
                         </tr>
                         <tr>
-                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>NIS / رقم القid</td>
+                          <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-bold text-slate-500`}>NIS / رقم القيد</td>
                           <td className={`py-1 ${isUltraCompact ? 'print:py-[1px]' : 'print:py-0.5'} font-semibold text-slate-800`}>: {st.nis}</td>
                         </tr>
                         <tr>

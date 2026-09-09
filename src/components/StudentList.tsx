@@ -20,7 +20,7 @@ interface StudentListProps {
   onDeleteStudent: (id: string) => void;
   onViewRaport: (id: string) => void;
   onPrintClass: (kelas: string) => void;
-  onBulkSaveStudents?: (updatedStudentsList: Student[]) => void;
+  onBulkSaveStudents?: (updatedStudentsList: Student[]) => Promise<void>;
   onPrintMultipleStudents?: (studentIds: string[]) => void;
   onDeleteClassStudents?: (kelas: string) => void;
 }
@@ -585,16 +585,16 @@ export default function StudentList({
     reader.readAsBinaryString(file);
   };
 
-  const handleSaveImportedData = () => {
+  const handleSaveImportedData = async () => {
     if (importStatus?.studentsToSave && onBulkSaveStudents) {
-      onBulkSaveStudents(importStatus.studentsToSave);
+      await onBulkSaveStudents(importStatus.studentsToSave);
       setShowImportModal(false);
       setImportStatus(null);
       alert(`Berhasil mengimpor data! ${importStatus.newCount} santri baru ditambahkan, ${importStatus.updatedCount} santri diperbarui.`);
     }
   };
 
-  const handleExecutePromotion = () => {
+  const handleExecutePromotion = async () => {
     if (!promoSourceClass || !promoDestClass || !promoTargetYear) {
       alert("Harap lengkapi seluruh formulir promosi kenaikan kelas!");
       return;
@@ -658,7 +658,7 @@ export default function StudentList({
 
     // 4. Save
     if (onBulkSaveStudents) {
-      onBulkSaveStudents(updatedAllStudents);
+      await onBulkSaveStudents(promotedStudents);
       alert(`Promosi Berhasil!\n\n${promotedStudents.length} santri dari kelas "${promoSourceClass}" berhasil dipromosikan ke kelas "${promoDestClass}" untuk Tahun Ajaran ${promoTargetYear} (Semester ${promoTargetSemester}).\n\nCatatan: Silakan ubah Semester & Tahun Ajaran Aktif di menu Pengaturan Sistem jika ingin mulai mengelola data term baru.`);
       setShowPromoModal(false);
     } else {
@@ -1320,7 +1320,7 @@ export default function StudentList({
                       <span>Biodata Kelas</span>
                     </button>
 
-                    {canModifyClass(className) && list.length > 0 && onDeleteClassStudents && (
+                    {userRole === 'admin' && list.length > 0 && onDeleteClassStudents && (
                       <button
                         onClick={() => onDeleteClassStudents(className)}
                         className="flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 transition active:scale-95 cursor-pointer"
@@ -1420,6 +1420,7 @@ export default function StudentList({
                                       <span>Edit</span>
                                     </button>
                                     <button
+                                      disabled={userRole !== 'admin'}
                                       onClick={() => onDeleteStudent(st.id)}
                                       className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition animate-fade-in"
                                       title="Hapus data santri"

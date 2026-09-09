@@ -24,6 +24,7 @@ export async function createStaffAccount(
   password?: string, 
   email?: string
 ): Promise<UserAccount> {
+  if (!password || password.length < 6) throw new Error('Password minimal 6 karakter.');
   const cleanUsername = username.trim().toLowerCase();
   const authEmail = email && email.includes('@') ? email.trim() : `${cleanUsername}@alhusna.app`;
 
@@ -32,7 +33,7 @@ export async function createStaffAccount(
       fullname,
       username: cleanUsername,
       role,
-      password: password || cleanUsername,
+      password,
       email: authEmail
     });
     

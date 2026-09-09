@@ -1,51 +1,33 @@
-import { useState, useCallback } from 'react';
 import { SystemLog } from '../types';
 import { dbService } from '../lib/db';
+import { useCachedState } from './useCachedState';
 
 export function useLogs() {
-  const [logs, setLogsRaw] = useState<SystemLog[]>([]);
-
-  const setLogs = useCallback((val: SystemLog[] | ((prev: SystemLog[]) => SystemLog[])) => {
-    setLogsRaw(prev => {
-      const nextLogs = typeof val === 'function' ? val(prev) : val;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('raport_logs', JSON.stringify(nextLogs.slice(0, 150)));
-      }
-      return nextLogs;
-    });
-  }, []);
-
+  const [logs, setLogs] = useCachedState<SystemLog[]>('raport_logs', []);
   const addLog = async (action: string, details: string, user: string) => {
-    const newLog: SystemLog = {
-      id: Date.now().toString(),
+    const log = {
+      id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       action,
       details,
-      user
+      user,
     };
-
-    setLogs(prev => [newLog, ...prev]);
-
     try {
-      await dbService.saveLog(newLog);
-    } catch (err) {
-      console.error("Gagal menyimpan log:", err);
+      await dbService.saveLog(log);
+      setLogs((previous) => [log, ...previous].slice(0, 150));
+    } catch {
+      // A failed audit write must not make a completed academic write look unsuccessful.
+      window.dispatchEvent(
+        new CustomEvent('raport-notice', {
+          detail:
+            'Data tersimpan, tetapi aktivitas belum tercatat. Periksa koneksi Anda.',
+        }),
+      );
     }
   };
-
   const clearAllLogs = async () => {
+    await dbService.clearAllLogs();
     setLogs([]);
-    try {
-      await dbService.clearAllLogs();
-    } catch (err) {
-      console.error("Gagal menghapus log:", err);
-    }
   };
-
-  return {
-    logs,
-    setLogs,
-    addLog,
-    clearAllLogs
-  };
+  return { logs, setLogs, addLog, clearAllLogs };
 }
