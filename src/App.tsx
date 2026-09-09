@@ -14,6 +14,7 @@ import UserManager from './components/UserManager';
 import MyProfile from './components/MyProfile';
 import BulkGradeEntry from './components/BulkGradeEntry';
 import RaportPrint from './components/RaportPrint';
+import { createStaffAccount, resetStaffPassword, deleteStaffAccount } from './lib/authFunctions';
 import { INITIAL_CLASSES } from './utils/initialData';
 import { UserAccount } from './types';
 import { Loader2 } from 'lucide-react';
@@ -322,22 +323,31 @@ function MainApp() {
           users={users}
           currentUser={currentUser}
           onAddUser={async (fullname, username, role, password, email) => {
-            const newUser: UserAccount = {
-              id: Date.now().toString(),
-              fullname,
-              username,
-              role,
-              email
-            };
-            await saveUser(newUser);
-            await addLog('TAMBAH_PENGGUNA', `Menambah akun pengguna ${username}`, currentUser.fullname);
+            try {
+              const newUser = await createStaffAccount(fullname, username, role, password, email);
+              await saveUser(newUser);
+              await addLog('TAMBAH_PENGGUNA', `Menambah akun pengguna ${username}`, currentUser.fullname);
+            } catch (err: any) {
+              alert(`Gagal membuat akun: ${err.message}`);
+            }
           }}
           onDeleteUser={async (id) => {
-            await deleteUser(id);
-            await addLog('HAPUS_PENGGUNA', `Menghapus akun pengguna ID ${id}`, currentUser.fullname);
+            try {
+              await deleteStaffAccount(id);
+              await deleteUser(id);
+              await addLog('HAPUS_PENGGUNA', `Menghapus akun pengguna ID ${id}`, currentUser.fullname);
+            } catch (err: any) {
+              alert(`Gagal menghapus akun: ${err.message}`);
+            }
           }}
           onUpdatePassword={async (id, newPass) => {
-            await addLog('RESET_PASSWORD', `Mereset password pengguna ID ${id}`, currentUser.fullname);
+            try {
+              await resetStaffPassword(id, newPass);
+              await addLog('RESET_PASSWORD', `Mereset password pengguna ID ${id}`, currentUser.fullname);
+              alert("Password pengguna berhasil direset!");
+            } catch (err: any) {
+              alert(`Gagal reset password: ${err.message}`);
+            }
           }}
           onUpdateEmail={async (id, email) => {
             const user = users.find(u => u.id === id);

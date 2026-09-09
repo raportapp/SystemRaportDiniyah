@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getFunctions } from 'firebase/functions';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Support loading from Vercel/Vite environment variables, fallback to local config file
@@ -31,4 +32,6 @@ if (typeof window !== 'undefined') {
 }
 
 export const auth = getAuth(app);
+export const functions = getFunctions(app);
+
 

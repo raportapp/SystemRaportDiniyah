@@ -193,7 +193,7 @@ export default function UserManager({
                 <tr>
                   <th className="p-4 font-bold">Nama Guru / Admin</th>
                   <th className="p-4 font-bold w-32">Username</th>
-                  <th className="p-4 font-bold w-48">Password</th>
+                  <th className="p-4 font-bold w-48">Aksi Keamanan</th>
                   <th className="p-4 font-bold w-28 text-center">Hak Akses</th>
                   <th className="p-4 font-bold text-center w-28">Tindakan</th>
                 </tr>
@@ -279,59 +279,47 @@ export default function UserManager({
                       {editingUserId === u.id ? (
                         <div className="flex items-center gap-1">
                           <input
-                            type="text"
+                            type="password"
                             value={tempPassword}
                             onChange={(e) => setTempPassword(e.target.value)}
-                            className="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-mono w-24 outline-none focus:ring-1 focus:ring-emerald-500"
-                            placeholder="Password"
+                            className="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-mono w-28 outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="Password Baru"
                           />
                           <button
                             onClick={() => {
-                              if (!tempPassword.trim()) {
-                                alert("Password tidak boleh kosong!");
+                              if (!tempPassword.trim() || tempPassword.trim().length < 6) {
+                                alert("Password minimal 6 karakter!");
                                 return;
                               }
                               onUpdatePassword(u.id, tempPassword.trim());
                               setEditingUserId(null);
+                              setTempPassword('');
                             }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-1.5 py-1 rounded transition shrink-0"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2 py-1 rounded transition shrink-0 cursor-pointer"
                           >
                             Simpan
                           </button>
                           <button
-                            onClick={() => setEditingUserId(null)}
-                            className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] px-1.5 py-1 rounded transition shrink-0"
+                            onClick={() => {
+                              setEditingUserId(null);
+                              setTempPassword('');
+                            }}
+                            className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] px-1.5 py-1 rounded transition shrink-0 cursor-pointer"
                           >
                             Batal
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-1.5 max-w-[170px]">
-                          <span className="font-mono text-xs font-semibold text-slate-700 truncate block max-w-[120px]">
-                            {u.password ? (
-                              u.password.length === 64 ? (
-                                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-sans font-bold" title={u.password}>
-                                  🔒 Aktif (Hashed)
-                                </span>
-                              ) : (
-                                u.password
-                              )
-                            ) : (
-                              <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-sans font-bold">
-                                {u.username} (Default)
-                              </span>
-                            )}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setEditingUserId(u.id);
-                              setTempPassword(u.password && u.password.length !== 64 ? u.password : '');
-                            }}
-                            className="text-[10px] font-bold text-emerald-700 hover:text-emerald-950 hover:underline shrink-0"
-                          >
-                            Ubah
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingUserId(u.id);
+                            setTempPassword('');
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                        >
+                          <KeyRound size={12} />
+                          <span>Reset Password</span>
+                        </button>
                       )}
                     </td>
                     <td className="p-4 text-center">
